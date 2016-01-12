@@ -72,7 +72,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the unit of measurement.
         /// </summary>
         /// <value>The unit of measurement.</value>
-        public QuantityUnit Unit
+        public string Unit
         {
             get;
             set;
