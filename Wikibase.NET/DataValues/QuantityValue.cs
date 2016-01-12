@@ -111,7 +111,7 @@ namespace Wikibase.DataValues
             }
             UpperBound = Amount;
             LowerBound = Amount;
-            Unit = QuantityUnit.DimensionLess;
+            Unit = QuantityUnit.DimensionLess.ToString();
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace Wikibase.DataValues
 
             JsonObject obj = value.asObject();
             this.Amount = obj.get(AmountJsonName).asString();
-            this.Unit = (QuantityUnit)Convert.ToInt32(obj.get(UnitJsonName).asString());
+            this.Unit = obj.get(UnitJsonName).asString();
             this.UpperBound = obj.get(UpperBoundJsonName).asString();
             this.LowerBound = obj.get(LowerBoundJsonName).asString();
         }
@@ -148,7 +148,8 @@ namespace Wikibase.DataValues
         {
             return new JsonObject()
                 .add(AmountJsonName, Amount)
-                .add(UnitJsonName, Convert.ToInt32(Unit).ToString(CultureInfo.InvariantCulture))
+                .add(UnitJsonName, Unit)
+                //.add(UnitJsonName, Convert.ToInt32(Unit).ToString(CultureInfo.InvariantCulture))
                 .add(UpperBoundJsonName, UpperBound)
                 .add(LowerBoundJsonName, LowerBound);
         }
