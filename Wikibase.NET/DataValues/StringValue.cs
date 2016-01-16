@@ -68,5 +68,71 @@ namespace Wikibase.DataValues
         {
             return JsonValue.valueOf(Value);
         }
+
+        private bool IsEqual(StringValue other)
+        {
+            StringValue s = other as StringValue;
+
+            return (s != null)
+                && (this.Value == s.Value);
+        }
+
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public override bool Equals(object value)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, value))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, value))
+            {
+                return false;
+            }
+
+            // Is the same type?
+            if (value.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return IsEqual((StringValue)value);
+        }
+
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public bool Equals(StringValue number)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, number))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, number))
+            {
+                return true;
+            }
+
+            return IsEqual(number);
+        }
+
+        /// <summary>
+        /// Gets the hash code of this object.
+        /// </summary>
+        /// <returns>Hash code</returns>
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
     }
 }

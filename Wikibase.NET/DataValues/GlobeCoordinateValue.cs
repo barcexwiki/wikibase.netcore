@@ -179,5 +179,91 @@ namespace Wikibase.DataValues
                 .add(PrecisionJsonName, Precision)
                 .add(GlobeJsonName, _globeJsonNames[Globe]);
         }
+
+
+        /// <summary>
+        /// Compares two objects of this class and determines if they are equal in value
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        private bool IsEqual(GlobeCoordinateValue other)
+        {
+            GlobeCoordinateValue coordinate = other as GlobeCoordinateValue;
+
+            return (coordinate != null)
+                && (this.Globe == coordinate.Globe)
+                && (this.Precision == coordinate.Precision)
+                && (this.Longitude == coordinate.Longitude)
+                && (this.Latitude == coordinate.Latitude);
+        }
+
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public override bool Equals(object other)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, other))
+            {
+                return false;
+            }
+
+            // Is the same type?
+            if (other.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return IsEqual((GlobeCoordinateValue)other);
+        }
+
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public bool Equals(GlobeCoordinateValue other)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return IsEqual(other);
+        }
+
+        /// <summary>
+        /// Gets the hash code of this object.
+        /// </summary>
+        /// <returns>Hash code</returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                // Prime numbers
+                const int Base = (int)2166136261;
+                const int Multiplier = 16777619;
+
+                int hashCode = Base;
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Globe) ? this.Globe.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Precision) ? this.Precision.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Longitude) ? this.Longitude.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Longitude) ? this.Latitude.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
+
     }
 }

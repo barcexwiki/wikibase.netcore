@@ -129,5 +129,88 @@ namespace Wikibase.DataValues
         {
             return EntityType + " " + NumericId;
         }
+
+        /// <summary>
+        /// Compares two objects of this class and determines if they are equal in value
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        private bool IsEqual(EntityIdValue other)
+        {
+            EntityIdValue entityId = other as EntityIdValue;
+
+            return (entityId != null)
+                && (this.EntityType == entityId.EntityType)
+                && (this.NumericId == entityId.NumericId);
+        }
+
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public override bool Equals(object other)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, other))
+            {
+                return false;
+            }
+
+            // Is the same type?
+            if (other.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return IsEqual((EntityIdValue)other);
+        }
+        
+        /// <summary>
+        /// Tests for value equality.
+        /// </summary>
+        /// <returns>True if both objects are equal in value</returns>
+        public bool Equals(EntityIdValue other)
+        {
+            // Is null?
+            if (Object.ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            // Is the same object?
+            if (Object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return IsEqual(other);
+        }
+
+        /// <summary>
+        /// Gets the hash code of this object.
+        /// </summary>
+        /// <returns>Hash code</returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+
+
+                // Prime numbers
+                const int Base = (int)2166136261;
+                const int Multiplier = 16777619;
+
+                int hashCode = Base;
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.EntityType) ? this.EntityType.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.NumericId) ? this.EntityType.GetHashCode() : 0);
+                return hashCode;
+
+            }
+        }
     }
 }
