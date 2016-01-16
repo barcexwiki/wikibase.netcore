@@ -163,7 +163,21 @@ namespace Wikibase
         /// <returns>The statement</returns>
         public Statement createStatementForSnak(Snak snak)
         {
-            return (Statement)Claim.newFromSnak(this, snak, "statement");
+            Statement statement  = (Statement)Claim.newFromSnak(this, snak, "statement");
+
+            if (this.changes.get("claims") == null)
+            {
+                this.changes.set("claims", new JsonArray());
+            }
+
+            this.changes.get("claims").asArray().add(
+                new JsonObject()
+                    .add("mainsnak", statement.mainSnak.Encode())
+                    .add("type","statement")
+                    .add("rank","normal")
+            ); 
+
+            return statement;
         }
     }
 }
