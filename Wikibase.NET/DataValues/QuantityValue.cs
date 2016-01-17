@@ -62,7 +62,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public String Amount
+        public decimal Amount
         {
             get;
             set;
@@ -82,7 +82,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public String UpperBound
+        public decimal UpperBound
         {
             get;
             set;
@@ -92,7 +92,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public String LowerBound
+        public decimal LowerBound
         {
             get;
             set;
@@ -104,11 +104,7 @@ namespace Wikibase.DataValues
         /// <param name="value">Integer value.</param>
         public QuantityValue(Int64 value)
         {
-            Amount = value.ToString(CultureInfo.InvariantCulture);
-            if ( value > 0 )
-            {
-                Amount = "+" + Amount;
-            }
+            Amount = value;
             UpperBound = Amount;
             LowerBound = Amount;
             Unit = QuantityUnit.DimensionLess.ToString();
@@ -125,10 +121,10 @@ namespace Wikibase.DataValues
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
-            this.Amount = obj.get(AmountJsonName).asString();
+            this.Amount = Decimal.Parse(obj.get(AmountJsonName).asString(), CultureInfo.InvariantCulture);
             this.Unit = obj.get(UnitJsonName).asString();
-            this.UpperBound = obj.get(UpperBoundJsonName).asString();
-            this.LowerBound = obj.get(LowerBoundJsonName).asString();
+            this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(),CultureInfo.InvariantCulture);
+            this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(),CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -147,11 +143,10 @@ namespace Wikibase.DataValues
         internal override JsonValue Encode()
         {
             return new JsonObject()
-                .add(AmountJsonName, Amount)
+                .add(AmountJsonName, Amount.ToString())
                 .add(UnitJsonName, Unit)
-                //.add(UnitJsonName, Convert.ToInt32(Unit).ToString(CultureInfo.InvariantCulture))
-                .add(UpperBoundJsonName, UpperBound)
-                .add(LowerBoundJsonName, LowerBound);
+                .add(UpperBoundJsonName, UpperBound.ToString())
+                .add(LowerBoundJsonName, LowerBound.ToString());
         }
 
         /// <summary>
