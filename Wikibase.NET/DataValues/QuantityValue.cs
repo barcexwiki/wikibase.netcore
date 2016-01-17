@@ -101,6 +101,21 @@ namespace Wikibase.DataValues
         /// <summary>
         /// Creates a new quantity value for a exact integer value.
         /// </summary>
+        /// <param name="amount">Amount the quantity represents.</param>
+        /// <param name="lowerBound">Upper bound of the amount.</param>
+        /// <param name="upperBound">Lower bound of the amount.</param>
+        /// <param name="unit">Integer value.</param>
+        public QuantityValue(decimal amount, decimal lowerBound, decimal upperBound, string unit)
+        {
+            Amount = amount;
+            UpperBound = upperBound;
+            LowerBound = lowerBound;
+            Unit = unit;
+        }
+
+        /// <summary>
+        /// Creates a new quantity value for a exact integer value.
+        /// </summary>
         /// <param name="value">Integer value.</param>
         public QuantityValue(Int64 value)
         {
@@ -143,10 +158,10 @@ namespace Wikibase.DataValues
         internal override JsonValue Encode()
         {
             return new JsonObject()
-                .add(AmountJsonName, Amount.ToString())
+                .add(AmountJsonName, (Amount>=0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture))
                 .add(UnitJsonName, Unit)
-                .add(UpperBoundJsonName, UpperBound.ToString())
-                .add(LowerBoundJsonName, LowerBound.ToString());
+                .add(UpperBoundJsonName, (UpperBound>=0 ? "+" : "") + UpperBound.ToString(CultureInfo.InvariantCulture))
+                .add(LowerBoundJsonName, (LowerBound>=0 ? "+" : "") + LowerBound.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>
