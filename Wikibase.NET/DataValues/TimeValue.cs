@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using MinimalJson;
 
 namespace Wikibase.DataValues
@@ -45,7 +46,7 @@ namespace Wikibase.DataValues
         /// <summary>
         /// 1 kiloyear, 1,000 years or one millenium.
         /// </summary>
-        Millenium = 6,
+        Millennium = 6,
 
         /// <summary>
         /// 100 years or one century.
@@ -127,7 +128,7 @@ namespace Wikibase.DataValues
         private const String CalendarModelJsonName = "calendarmodel";
 
         /// <summary>
-        /// The name of the <see cref="FullValue"/> property in the serialized json object.
+        /// The name of the <see cref="Time"/> property in the serialized json object.
         /// </summary>
         private const String TimeJsonName = "time";
 
@@ -161,6 +162,9 @@ namespace Wikibase.DataValues
              {CalendarModel.JulianCalendar, "http://www.wikidata.org/entity/Q1985786"}
         };
 
+        private string time;
+        private int timeOffset;
+
         #endregion private fields
 
         #region properties
@@ -177,19 +181,19 @@ namespace Wikibase.DataValues
             }
             set
             {
-                FullValue = value.ToString("+yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+                Time = value.ToString("+yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
             }
         }
 
         private DateTime GetDateTimeValue()
         {
-            if ( FullValue.StartsWith("+0000000", StringComparison.Ordinal) )
+            if ( Time.StartsWith("+0000000", StringComparison.Ordinal) )
             {
-                return DateTime.Parse(FullValue.Substring(8), CultureInfo.InvariantCulture);
+                return DateTime.Parse(Time.Substring(8), CultureInfo.InvariantCulture);
             }
-            if ( FullValue.StartsWith("+", StringComparison.Ordinal) )
+            if ( Time.StartsWith("+", StringComparison.Ordinal) )
             {
-                return DateTime.Parse(FullValue.Substring(1), CultureInfo.InvariantCulture);
+                return DateTime.Parse(Time.Substring(1), CultureInfo.InvariantCulture);
             }
             else
             {
@@ -201,10 +205,23 @@ namespace Wikibase.DataValues
         /// Point in time, represented per ISO8601
         /// The year can have up to 11 digits, the date always be signed, in the format +00000002013-01-01T00:00:00Z
         /// </summary>
-        public String FullValue
+        public String Time
         {
-            get;
-            set;
+            get 
+            { 
+                return time;
+            }
+            set 
+            {
+                if (IsValidTime(value))
+                {
+                    time = value;
+                }
+                else
+                {
+                    throw new ArgumentException("Time is not in the +yyyyyyyyyyyy-mm-ddThh:mm:ssZ format or it is out of range.", "Time");
+                }
+            }                
         }
 
         /// <summary>
@@ -212,8 +229,21 @@ namespace Wikibase.DataValues
         /// </summary>
         public Int32 TimeZoneOffset
         {
-            get;
-            set;
+            get
+            {
+                return timeOffset;
+            }
+            set
+            {
+                if (value >= -720 && value <= 720)
+                {
+                    timeOffset = value;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("TimeOffset out of range (-720,720)", "TimeOffset");
+                }
+            }
         }
 
         /// <summary>
@@ -272,7 +302,7 @@ namespace Wikibase.DataValues
         /// <param name="calendarModel">Calendar model property.</param>
         public TimeValue(String time, Int32 timeZoneOffset, Int32 before, Int32 after, TimeValuePrecision precision, CalendarModel calendarModel)
         {
-            this.FullValue = time;
+            this.Time = time;
             this.TimeZoneOffset = timeZoneOffset;
             this.Before = before;
             this.After = after;
@@ -306,7 +336,7 @@ namespace Wikibase.DataValues
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
-            this.FullValue = obj.get(TimeJsonName).asString();
+            this.Time = obj.get(TimeJsonName).asString();
             this.TimeZoneOffset = obj.get(TimeZoneJsonName).asInt();
             this.Before = obj.get(BeforeJsonName).asInt();
             this.After = obj.get(AfterJsonName).asInt();
@@ -326,6 +356,25 @@ namespace Wikibase.DataValues
 
         #region methods
 
+        private bool IsValidTime(string time)
+        {
+            Match m = Regex.Match(time, "^[+-](?<year>\\d{4,11})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hour>\\d{2}):(?<minute>\\d{2}):(?<second>\\d{2})Z$");
+
+            if (m.Success)
+            {
+                int day = int.Parse(m.Groups["day"].Value);
+                int month = int.Parse(m.Groups["month"].Value);
+                int hour = int.Parse(m.Groups["hour"].Value);
+                int minute = int.Parse(m.Groups["minute"].Value);
+                int second = int.Parse(m.Groups["second"].Value);
+                return (day<=31 && month<=12 && hour<=60 && minute<=60 && second<=30);
+            } else 
+            {
+                return false;
+            }
+
+        }
+
         /// <summary>
         /// Encodes as a <see cref="JsonValue"/>.
         /// </summary>
@@ -339,7 +388,7 @@ namespace Wikibase.DataValues
             }
 
             return new JsonObject()
-                .add(TimeJsonName, FullValue)
+                .add(TimeJsonName, Time)
                 .add(TimeZoneJsonName, TimeZoneOffset)
                 .add(BeforeJsonName, Before)
                 .add(AfterJsonName, After)
@@ -365,9 +414,10 @@ namespace Wikibase.DataValues
             TimeValue quantity = other as TimeValue;
 
             return (quantity != null)
-                && (this.FullValue == quantity.FullValue)
+                && (this.Time == quantity.Time)
                 && (this.Before == quantity.Before)
                 && (this.TimeZoneOffset == quantity.TimeZoneOffset)
+                && (this.Precision == quantity.Precision)
                 && (this.DisplayCalendarModel == quantity.DisplayCalendarModel)
                 && (this.After == quantity.After);
         }
@@ -433,7 +483,7 @@ namespace Wikibase.DataValues
                 const int Multiplier = 16777619;
 
                 int hashCode = Base;
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.FullValue) ? this.FullValue.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Time) ? this.Time.GetHashCode() : 0);
                 hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Before) ? this.Before.GetHashCode() : 0);
                 hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.After) ? this.After.GetHashCode() : 0);
                 hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.TimeZoneOffset) ? this.TimeZoneOffset.GetHashCode() : 0);
