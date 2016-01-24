@@ -115,6 +115,60 @@ namespace Wikibase.DataValues
     /// </summary>
     public class TimeValue : DataValue
     {
+
+        private struct ParsedTime
+        {
+            public long year;
+            public int month;
+            public int day;
+            public int hour;
+            public int minute;
+            public int second;
+
+            public ParsedTime(string time)
+            {
+                bool valid = false;
+                year = 0;
+                month = 0;
+                day = 0;
+                hour = 0;
+                minute = 0;
+                second = 0;
+
+                Match m = Regex.Match(time, "^(?<year>[+-]\\d{4,11})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hour>\\d{2}):(?<minute>\\d{2}):(?<second>\\d{2})Z$");
+
+                if (m.Success)
+                {
+                    year = long.Parse(m.Groups["year"].Value);
+                    day = int.Parse(m.Groups["day"].Value);
+                    month = int.Parse(m.Groups["month"].Value);
+                    hour = int.Parse(m.Groups["hour"].Value);
+                    minute = int.Parse(m.Groups["minute"].Value);
+                    second = int.Parse(m.Groups["second"].Value);
+                    valid = (
+                                day <= 31 && 
+                                month <= 12 &&
+                                hour <= 60 && 
+                                minute <= 60 && 
+                                second <= 30 &&
+                                year <= 99999999999 &&
+                                year >= -99999999999
+                            );
+                } 
+
+                if (!valid)
+                    throw new FormatException("The format of the time is not valid");
+            }
+
+            public string ToString()
+            {
+                string result = string.Format("{0:0000}-{1:00}-{2:00}T{3:00}:{4:00}:{5:00}Z", year, month, day, hour, minute, second);
+                if (year >= 0) result = "+" + result;
+                return result;
+            }
+        }
+
+
         #region Json names
 
         /// <summary>
@@ -162,8 +216,10 @@ namespace Wikibase.DataValues
              {CalendarModel.JulianCalendar, "http://www.wikidata.org/entity/Q1985786"}
         };
 
-        private string time;
-        private int timeOffset;
+        private ParsedTime time;
+        private int timeZoneOffset;
+        private int before;
+        private int after;
 
         #endregion private fields
 
@@ -209,15 +265,15 @@ namespace Wikibase.DataValues
         {
             get 
             { 
-                return time;
+                return time.ToString();
             }
             set 
             {
-                if (IsValidTime(value))
+                try
                 {
-                    time = value;
+                    time = new ParsedTime(value);
                 }
-                else
+                catch
                 {
                     throw new ArgumentException("Time is not in the +yyyyyyyyyyyy-mm-ddThh:mm:ssZ format or it is out of range.", "Time");
                 }
@@ -231,18 +287,14 @@ namespace Wikibase.DataValues
         {
             get
             {
-                return timeOffset;
+                return timeZoneOffset;
             }
             set
             {
-                if (value >= -720 && value <= 720)
-                {
-                    timeOffset = value;
-                }
+                if (IsValidTimeOffset(value))
+                    timeZoneOffset = value;
                 else
-                {
                     throw new ArgumentOutOfRangeException("TimeOffset out of range (-720,720)", "TimeOffset");
-                }
             }
         }
 
@@ -252,8 +304,17 @@ namespace Wikibase.DataValues
         /// </summary>
         public Int32 Before
         {
-            get;
-            set;
+            get
+            {
+                return before;
+            }
+            set
+            {
+                if (IsValidBeforeAfter(value))
+                    before = value;
+                else
+                    throw new ArgumentOutOfRangeException("Before is out of range (cannot be negative)", "Before");
+            }
         }
 
         /// <summary>
@@ -262,8 +323,17 @@ namespace Wikibase.DataValues
         /// </summary>
         public Int32 After
         {
-            get;
-            set;
+            get
+            {
+                return after;
+            }
+            set
+            {
+                if (IsValidBeforeAfter(value))
+                    after = value;
+                else
+                    throw new ArgumentOutOfRangeException("After is out of range (cannot be negative)", "After");
+            }
         }
 
         /// <summary>
@@ -302,10 +372,25 @@ namespace Wikibase.DataValues
         /// <param name="calendarModel">Calendar model property.</param>
         public TimeValue(String time, Int32 timeZoneOffset, Int32 before, Int32 after, TimeValuePrecision precision, CalendarModel calendarModel)
         {
-            this.Time = time;
-            this.TimeZoneOffset = timeZoneOffset;
-            this.Before = before;
-            this.After = after;
+
+            if (!IsValidBeforeAfter(before))
+                throw new ArgumentException("Before is out of range (cannot be negative)", "before");
+            if (!IsValidBeforeAfter(after))
+                throw new ArgumentException("After is out of range (cannot be negative)", "after");
+
+            try
+            {
+                this.time = new ParsedTime(time);
+            }
+            catch
+            {
+                throw new ArgumentException("Time is not in a valid format.", "time");
+            }
+                            
+
+            this.timeZoneOffset = timeZoneOffset;
+            this.before = before;
+            this.after = after;
             this.Precision = precision;
             this.DisplayCalendarModel = calendarModel;
         }
@@ -356,24 +441,16 @@ namespace Wikibase.DataValues
 
         #region methods
 
-        private bool IsValidTime(string time)
+        private bool IsValidTimeOffset(int timeZoneOffset)
         {
-            Match m = Regex.Match(time, "^[+-](?<year>\\d{4,11})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hour>\\d{2}):(?<minute>\\d{2}):(?<second>\\d{2})Z$");
-
-            if (m.Success)
-            {
-                int day = int.Parse(m.Groups["day"].Value);
-                int month = int.Parse(m.Groups["month"].Value);
-                int hour = int.Parse(m.Groups["hour"].Value);
-                int minute = int.Parse(m.Groups["minute"].Value);
-                int second = int.Parse(m.Groups["second"].Value);
-                return (day<=31 && month<=12 && hour<=60 && minute<=60 && second<=30);
-            } else 
-            {
-                return false;
-            }
-
+            return timeZoneOffset>=-720 && timeZoneOffset<=720;
         }
+
+        private bool IsValidBeforeAfter(int amount)
+        {
+            return amount>=0;
+        }
+
 
         /// <summary>
         /// Encodes as a <see cref="JsonValue"/>.
@@ -411,15 +488,15 @@ namespace Wikibase.DataValues
         /// <returns>True if both objects are equal in value</returns>
         private bool IsEqual(TimeValue other)
         {
-            TimeValue quantity = other as TimeValue;
+            TimeValue otherTime = other as TimeValue;
 
-            return (quantity != null)
-                && (this.Time == quantity.Time)
-                && (this.Before == quantity.Before)
-                && (this.TimeZoneOffset == quantity.TimeZoneOffset)
-                && (this.Precision == quantity.Precision)
-                && (this.DisplayCalendarModel == quantity.DisplayCalendarModel)
-                && (this.After == quantity.After);
+            return (otherTime != null)
+                && (this.Time == otherTime.Time)
+                && (this.Before == otherTime.Before)
+                && (this.TimeZoneOffset == otherTime.TimeZoneOffset)
+                && (this.Precision == otherTime.Precision)
+                && (this.DisplayCalendarModel == otherTime.DisplayCalendarModel)
+                && (this.After == otherTime.After);
         }
 
         /// <summary>
