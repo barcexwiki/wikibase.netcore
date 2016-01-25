@@ -64,6 +64,11 @@ namespace Wikibase
         protected JsonObject changes = new JsonObject();
 
         /// <summary>
+        /// List of languages codes whose labels have changed
+        /// </summary>
+        protected HashSet<string> dirtyLabels = new HashSet<string>();
+
+        /// <summary>
         /// Constructor creating a blank entity instance.
         /// </summary>
         /// <param name="api">The api.</param>
@@ -208,16 +213,7 @@ namespace Wikibase
             if ( getLabel(lang) != value )
             {
                 this.labels[lang] = value;
-                if ( this.changes.get("labels") == null )
-                {
-                    this.changes.set("labels", new JsonObject());
-                }
-                this.changes.get("labels").asObject().set(
-                    lang,
-                    new JsonObject()
-                        .add("language", lang)
-                        .add("value", value)
-                );
+                this.dirtyLabels.Add(lang);
             }
         }
 
@@ -233,16 +229,7 @@ namespace Wikibase
                 throw new ArgumentException("empty language");
             if ( this.labels.Remove(lang) )
             {
-                if ( this.changes.get("labels") == null )
-                {
-                    this.changes.set("labels", new JsonObject());
-                }
-                this.changes.get("labels").asObject().set(
-                    lang,
-                    new JsonObject()
-                        .add("language", lang)
-                        .add("value", "")
-                );
+                this.dirtyLabels.Add(lang);
                 return true;
             }
             return false;
@@ -514,6 +501,32 @@ namespace Wikibase
         /// <param name="summary">The edit summary.</param>
         public void save(String summary)
         {
+            if ( dirtyLabels.Count > 0 )
+            {
+                if ( this.changes.get("labels") == null )
+                {
+                    this.changes.set("labels", new JsonObject());
+                }
+
+                foreach (string lang in dirtyLabels)
+                {
+                    string labelValue = "";
+
+                    // If there is label the text is the label itself, if not is a removed label (i.e. empty)
+                    if (labels.ContainsKey(lang))
+                    {
+                        labelValue = labels[lang];
+                    } 
+
+                    this.changes.get("labels").asObject().set(
+                        lang,
+                        new JsonObject()
+                            .add("language", lang)
+                            .add("value", labelValue)
+                    );
+                }
+            }
+
             if ( !this.changes.isEmpty() )
             {
                 JsonObject result;
@@ -532,6 +545,9 @@ namespace Wikibase
                 this.updateLastRevisionIdFromResult(result);
                 this.changes = new JsonObject();
             }
+
+            // Clears the dirty sets
+            dirtyLabels.Clear();
         }
 
         internal void updateLastRevisionIdFromResult(JsonObject result)
