@@ -12,6 +12,12 @@ namespace Wikibase
     {
         private Dictionary<String, String> sitelinks = new Dictionary<String, String>();
 
+        /// <summary>
+        /// List of site codes whose sitelinks have changed
+        /// </summary>
+        protected HashSet<string> dirtySitelinks = new HashSet<string>();
+
+
         #region Json names
 
         /// <summary>
@@ -110,17 +116,14 @@ namespace Wikibase
         /// <param name="title">The sitelink.</param>
         public void setSitelink(String site, String title)
         {
+
+            if (String.IsNullOrWhiteSpace(title))
+                throw new ArgumentException("empty title");
+            if (String.IsNullOrWhiteSpace(site))
+                throw new ArgumentException("empty site");
+
             this.sitelinks[site] = title;
-            if ( this.changes.get(SiteLinksJsonName) == null )
-            {
-                this.changes.set(SiteLinksJsonName, new JsonObject());
-            }
-            this.changes.get(SiteLinksJsonName).asObject().set(
-                site,
-                new JsonObject()
-                    .add(SiteLinksSiteJsonName, site)
-                    .add(SiteLinksTitleJsonName, title)
-            );
+            this.dirtySitelinks.Add(site);
         }
 
         /// <summary>
@@ -132,16 +135,7 @@ namespace Wikibase
         {
             if ( sitelinks.Remove(site) )
             {
-                if ( this.changes.get(SiteLinksJsonName) == null )
-                {
-                    this.changes.set(SiteLinksJsonName, new JsonObject());
-                }
-                this.changes.get(SiteLinksJsonName).asObject().set(
-                    site,
-                    new JsonObject()
-                        .add(SiteLinksSiteJsonName, site)
-                        .add(SiteLinksTitleJsonName, "")
-                );
+                this.dirtyDescriptions.Add(site);
                 return true;
             }
             return false;
@@ -178,6 +172,46 @@ namespace Wikibase
             ); 
 
             return statement;
+        }
+
+        /// <summary>
+        /// Save all changes.
+        /// </summary>
+        /// <param name="summary">The edit summary.</param>
+        public override void save(string summary)
+        {
+
+
+            if (dirtySitelinks.Count > 0)
+            {
+                if (this.changes.get(SiteLinksJsonName) == null)
+                {
+                    this.changes.set(SiteLinksJsonName, new JsonObject());
+                }
+
+                foreach (string site in dirtySitelinks)
+                {
+                    string sitelinkValue = "";
+
+                    // If there is label the text is the label itself, if not is a removed label (i.e. empty)
+                    if (sitelinks.ContainsKey(site))
+                    {
+                        sitelinkValue = sitelinks[site];
+                    }
+
+                    this.changes.get(SiteLinksJsonName).asObject().set(
+                        site,
+                        new JsonObject()
+                            .add(SiteLinksSiteJsonName, site)
+                            .add(SiteLinksTitleJsonName, sitelinkValue)
+                    );
+                }
+            }
+
+            base.save(summary);
+
+            // Clears the dirty sets
+            dirtySitelinks.Clear();
         }
     }
 }

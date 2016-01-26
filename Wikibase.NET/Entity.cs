@@ -69,6 +69,12 @@ namespace Wikibase
         protected HashSet<string> dirtyLabels = new HashSet<string>();
 
         /// <summary>
+        /// List of languages codes whose descriptions have changed
+        /// </summary>
+        protected HashSet<string> dirtyDescriptions = new HashSet<string>();
+
+
+        /// <summary>
         /// Constructor creating a blank entity instance.
         /// </summary>
         /// <param name="api">The api.</param>
@@ -271,19 +277,10 @@ namespace Wikibase
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
 
-            if ( getDescription(lang) != value )
+            if (getDescription(lang) != value)
             {
                 this.descriptions[lang] = value;
-                if ( this.changes.get("descriptions") == null )
-                {
-                    this.changes.set("descriptions", new JsonObject());
-                }
-                this.changes.get("descriptions").asObject().set(
-                    lang,
-                    new JsonObject()
-                        .add("language", lang)
-                        .add("value", value)
-                );
+                this.dirtyDescriptions.Add(lang);
             }
         }
 
@@ -298,18 +295,9 @@ namespace Wikibase
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
 
-            if ( this.descriptions.Remove(lang) )
+            if (this.descriptions.Remove(lang))
             {
-                if ( this.changes.get("descriptions") == null )
-                {
-                    this.changes.set("descriptions", new JsonObject());
-                }
-                this.changes.get("descriptions").asObject().set(
-                    lang,
-                    new JsonObject()
-                        .add("language", lang)
-                        .add("value", "")
-                );
+                this.dirtyDescriptions.Add(lang);
                 return true;
             }
             return false;
@@ -499,7 +487,7 @@ namespace Wikibase
         /// Save all changes.
         /// </summary>
         /// <param name="summary">The edit summary.</param>
-        public void save(String summary)
+        public virtual void save(String summary)
         {
             if ( dirtyLabels.Count > 0 )
             {
@@ -527,6 +515,33 @@ namespace Wikibase
                 }
             }
 
+            if (dirtyDescriptions.Count > 0)
+            {
+                if (this.changes.get("descriptions") == null)
+                {
+                    this.changes.set("descriptions", new JsonObject());
+                }
+
+                foreach (string lang in dirtyDescriptions)
+                {
+                    string descriptionValue = "";
+
+                    // If there is description the text is the label itself, if not is a removed label (i.e. empty)
+                    if (labels.ContainsKey(lang))
+                    {
+                        descriptionValue = descriptions[lang];
+                    }
+
+                    this.changes.get("descriptions").asObject().set(
+                        lang,
+                        new JsonObject()
+                            .add("language", lang)
+                            .add("value", descriptionValue)
+                    );
+                }
+            }
+
+
             if ( !this.changes.isEmpty() )
             {
                 JsonObject result;
@@ -548,6 +563,7 @@ namespace Wikibase
 
             // Clears the dirty sets
             dirtyLabels.Clear();
+            dirtyDescriptions.Clear();
         }
 
         internal void updateLastRevisionIdFromResult(JsonObject result)
