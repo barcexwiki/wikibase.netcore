@@ -12,6 +12,14 @@ namespace Wikibase
     /// </summary>
     public class Claim
     {
+
+        internal enum ClaimStatus
+        {
+            Existing,
+            New,
+            Removed
+        }
+
         // TODO: Changes of qualifiers
 
         /// <summary>
@@ -56,6 +64,8 @@ namespace Wikibase
             get;
             private set;
         }
+
+        internal ClaimStatus status;
 
         private Snak mMainSnak;
 
@@ -140,6 +150,8 @@ namespace Wikibase
                     this.internalId = "" + Environment.TickCount + this.mMainSnak.PropertyId + this.mMainSnak.DataValue;
                 }
             }
+
+            this.status = ClaimStatus.Existing;
         }
 
         internal static Claim newFromArray(Entity entity, JsonObject data)
@@ -180,6 +192,7 @@ namespace Wikibase
                     .add("mainsnak", snak.Encode())
                     .add("type", type)
             );
+            claim.status = ClaimStatus.New;
             claim.changes = new JsonObject()
                 .add("mainsnak", snak.Encode());
             entity.addClaim(claim);

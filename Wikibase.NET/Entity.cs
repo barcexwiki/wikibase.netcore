@@ -590,7 +590,16 @@ namespace Wikibase
                 this.changes.get("aliases").asArray().add(jsonAlias);
             }
 
-
+            foreach (Claim c in Claims)
+            {
+                switch (c.status)
+                {
+                    case Claim.ClaimStatus.New:
+                        c.save("");
+                        break;
+                }
+            }
+   
             if ( !this.changes.isEmpty() )
             {
                 JsonObject result;
