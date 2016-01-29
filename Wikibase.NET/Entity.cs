@@ -11,6 +11,30 @@ namespace Wikibase
     /// </summary>
     public abstract class Entity
     {
+
+        private enum AliasStatus
+        {
+            Existing,
+            New,
+            Removed
+        }
+
+        private class EntityAlias
+        {
+            public string Language { get; set; }
+            public string Label { get; set; }
+            public AliasStatus Status { get; set; }
+
+            public EntityAlias(string language, string label, AliasStatus status)
+            {
+                Language = language;
+                Label = label;
+                Status = status;
+            }
+
+        }
+
+
         /// <summary>
         /// The entity id
         /// </summary>
@@ -49,9 +73,9 @@ namespace Wikibase
         private Dictionary<String, String> descriptions = new Dictionary<String, String>();
 
         /// <summary>
-        /// Aliases. Key is the language editifier, value a list of aliases in the given language.
+        /// Aliases.
         /// </summary>
-        private Dictionary<String, List<String>> aliases = new Dictionary<String, List<String>>();
+        private List<EntityAlias> aliases = new List<EntityAlias>();
 
         /// <summary>
         /// Claims. Key is the property Id, value a dictionary with the claims internal id as the key and the actual claim as the value.
@@ -104,6 +128,10 @@ namespace Wikibase
             if ( data == null )
                 throw new ArgumentNullException("data");
 
+            // Clears the dirty sets
+            dirtyLabels.Clear();
+            dirtyDescriptions.Clear();
+
             if ( data.get("id") != null )
             {
                 this.id = new EntityId(data.get("id").asString());
@@ -143,9 +171,8 @@ namespace Wikibase
                     List<String> list = new List<String>();
                     foreach ( JsonValue value in member.value.asArray() )
                     {
-                        list.Add(value.asObject().get("value").asString());
+                        aliases.Add(new EntityAlias(member.name, value.asObject().get("value").asString(), AliasStatus.Existing));
                     }
-                    this.aliases.Add(member.name, list);
                 }
             }
             JsonValue returnedClaims = data.get("claims");
@@ -308,62 +335,70 @@ namespace Wikibase
         /// </summary>
         /// <returns>The aliases</returns>
         /// <value>Key is the language, value a list of aliases.</value>
-        public Dictionary<String, List<String>> getAliases()
+        public Dictionary<String, List<String>> GetAliases()
         {
-            Dictionary<String, List<String>> copy = new Dictionary<String, List<String>>(aliases);
-            foreach ( KeyValuePair<String, List<String>> pair in aliases )
+
+            IEnumerable<EntityAlias> filtered = from a in aliases
+                                                where a.Status == AliasStatus.Existing || a.Status == AliasStatus.New
+                                                select a;
+
+            Dictionary<String, List<String>> result = new Dictionary<string, List<string>>();
+
+            foreach (EntityAlias a in filtered)
             {
-                copy[pair.Key] = new List<string>(pair.Value);
+                if (!result.ContainsKey(a.Language))
+                    result[a.Language] = new List<string>();
+
+                result[a.Language].Add(a.Label);
             }
-            return copy;
+
+            return result;
         }
+
 
         /// <summary>
         /// Get the aliases for the given language.
         /// </summary>
         /// <param name="lang">The language.</param>
         /// <returns>The aliases, or <c>null</c> if no aliases are defined for the language.</returns>
-        public List<String> getAlias(String lang)
+        public string[] GetAliases(string lang)
         {
-            return aliases.ContainsKey(lang) ? new List<String>(aliases[lang]) : null;
+
+            IEnumerable<string> filtered = from a in aliases
+                                             where a.Language == lang && (a.Status == AliasStatus.Existing || a.Status == AliasStatus.New)
+                                             select a.Label;
+
+            return filtered.Any() ? filtered.ToArray() : null;
+
         }
+
 
         /// <summary>
         /// Add an alias for the given language.
         /// </summary>
         /// <param name="lang">The language.</param>
         /// <param name="value">The alias.</param>
-        public void addAlias(String lang, String value)
+        public void AddAlias(string lang, string value)
         {
-            if ( !this.aliases.ContainsKey(lang) )
+
+            IEnumerable<EntityAlias> filtered = from a in aliases
+                                                where a.Language == lang && a.Label == value
+                                                select a;
+
+            EntityAlias alias = filtered.FirstOrDefault();
+
+            if (alias != null)
             {
-                this.aliases.Add(lang, new List<String>());
+                if (alias.Status == AliasStatus.Removed)
+                    alias.Status = AliasStatus.Existing;
             }
-            if ( !aliases[lang].Contains(value) )
+            else
             {
-                this.aliases[lang].Add(value);
-                if ( this.changes.get("aliases") == null )
-                {
-                    this.changes.set("aliases", new JsonArray());
-                }
-                // Override if needed an action on the same alias
-                for ( int i = 0 ; i < this.changes.get("aliases").asArray().size() ; i++ )
-                {
-                    JsonObject obj = this.changes.get("aliases").asArray().get(i).asObject();
-                    if ( obj.get("language").asString() == lang && obj.get("value").asString() == value )
-                    {
-                        this.changes.get("aliases").asArray().removeAt(i);
-                        break;
-                    }
-                }
-                this.changes.get("aliases").asArray().add(
-                    new JsonObject()
-                        .add("language", lang)
-                        .add("value", value)
-                        .add("add", true)
-                );
+                aliases.Add(new EntityAlias(lang, value, AliasStatus.New));
             }
+
         }
+
 
         /// <summary>
         /// Remove the alias for the given language.
@@ -372,42 +407,36 @@ namespace Wikibase
         /// <param name="value">The alias.</param>
         /// <returns><c>true</c> if the alias was removed successfully, <c>false</c> otherwise.</returns>
         /// <exception cref="ArgumentException"><paramref name="lang"/> or <paramref name="value"/> is empty string or <c>null</c>.</exception>
-        public Boolean removeAlias(String lang, String value)
+        public void RemoveAlias(string lang, string value)
         {
-            if ( String.IsNullOrWhiteSpace(lang) )
-                throw new ArgumentException("empty language");
-            if ( String.IsNullOrWhiteSpace(value) )
-                throw new ArgumentException("empty value");
+            if (String.IsNullOrWhiteSpace(lang))
+                throw new ArgumentException("empty language", "lang");
+            if (String.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("empty value", "value");
 
-            if ( this.aliases.ContainsKey(lang) )
+
+            IEnumerable<EntityAlias> filtered = from a in aliases
+                                                where a.Language == lang && a.Label == value
+                                                select a;
+
+            EntityAlias alias = filtered.FirstOrDefault();
+
+            if (alias != null)
             {
-                if ( this.aliases[lang].Remove(value) )
+                switch (alias.Status)
                 {
-                    if ( this.changes.get("aliases") == null )
-                    {
-                        this.changes.set("aliases", new JsonArray());
-                    }
-                    // Override if needed an action on the same alias
-                    for ( int i = 0 ; i < this.changes.get("aliases").asArray().size() ; i++ )
-                    {
-                        JsonObject obj = this.changes.get("aliases").asArray().get(i).asObject();
-                        if ( obj.get("language").asString() == lang && obj.get("value").asString() == value )
-                        {
-                            this.changes.get("aliases").asArray().removeAt(i);
-                            break;
-                        }
-                    }
-                    this.changes.get("aliases").asArray().add(
-                        new JsonObject()
-                            .add("language", lang)
-                            .add("value", value)
-                            .add("remove", true)
-                    );
-                    return true;
+                    case AliasStatus.Existing:
+                        alias.Status = AliasStatus.Removed;
+                        break;
+                    case AliasStatus.New:
+                        aliases.Remove(alias);
+                        break;
                 }
+
             }
-            return false;
+
         }
+
 
         /// <summary>
         /// Get all claims.
@@ -542,6 +571,26 @@ namespace Wikibase
             }
 
 
+            // Process aliases changes
+            IEnumerable<EntityAlias> aliasesToSave = from a in aliases
+                                                where a.Status == AliasStatus.New || a.Status == AliasStatus.Removed
+                                                select a;
+
+            if (this.changes.get("aliases") == null && aliasesToSave.Any())
+            {
+                this.changes.set("aliases", new JsonArray());
+            }
+            foreach (EntityAlias a in aliasesToSave)
+            {
+                JsonObject jsonAlias = new JsonObject()
+                    .add("language", a.Language)
+                    .add("value", a.Label)
+                    .add(a.Status == AliasStatus.New ? "add" : "remove", true);
+
+                this.changes.get("aliases").asArray().add(jsonAlias);
+            }
+
+
             if ( !this.changes.isEmpty() )
             {
                 JsonObject result;
@@ -561,9 +610,6 @@ namespace Wikibase
                 this.changes = new JsonObject();
             }
 
-            // Clears the dirty sets
-            dirtyLabels.Clear();
-            dirtyDescriptions.Clear();
         }
 
         internal void updateLastRevisionIdFromResult(JsonObject result)
