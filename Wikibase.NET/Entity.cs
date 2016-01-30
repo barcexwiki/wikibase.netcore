@@ -78,9 +78,9 @@ namespace Wikibase
         private List<EntityAlias> aliases = new List<EntityAlias>();
 
         /// <summary>
-        /// Claims. Key is the property Id, value a dictionary with the claims internal id as the key and the actual claim as the value.
+        /// Claims. 
         /// </summary>
-        private Dictionary<String, Dictionary<String, Claim>> claims = new Dictionary<String, Dictionary<String, Claim>>();
+        private List<Claim> claims = new List<Claim>();
 
         /// <summary>
         /// Changes cache.
@@ -181,13 +181,11 @@ namespace Wikibase
                 claims.Clear();
                 foreach ( JsonObject.Member member in returnedClaims.asObject() )
                 {
-                    Dictionary<String, Claim> list = new Dictionary<String, Claim>();
                     foreach ( JsonValue value in member.value.asArray() )
                     {
                         Claim claim = Claim.newFromArray(this, value.asObject());
-                        list.Add(claim.internalId, claim);
+                        claims.Add(claim);
                     }
-                    this.claims.Add(member.name, list);
                 }
             }
         }
@@ -439,21 +437,6 @@ namespace Wikibase
 
 
         /// <summary>
-        /// Get all claims.
-        /// </summary>
-        /// <returns>The claims.</returns>
-        /// <remarks>Key is property id, value a dictionary in which the key is the internal id and value is the actual claim.</remarks>
-        public Dictionary<String, Dictionary<String, Claim>> getClaims()
-        {
-            Dictionary<String, Dictionary<String, Claim>> copy = new Dictionary<String, Dictionary<String, Claim>>(claims);
-            foreach ( KeyValuePair<String, Dictionary<String, Claim>> pair in claims )
-            {
-                copy[pair.Key] = new Dictionary<String, Claim>(pair.Value);
-            }
-            return copy;
-        }
-
-        /// <summary>
         /// Gets all claims.
         /// </summary>
         /// <value>All claims.</value>
@@ -461,7 +444,7 @@ namespace Wikibase
         {
             get
             {
-                return claims.Values.SelectMany(x => x.Values).ToList();
+                return claims.Where(c => c.status == Claim.ClaimStatus.Existing || c.status == Claim.ClaimStatus.New);
             }
         }
 
@@ -470,9 +453,13 @@ namespace Wikibase
         /// </summary>
         /// <param name="property">The property.</param>
         /// <returns>The claims.</returns>
-        public Dictionary<String, Claim> getClaimsForProperty(String property)
+        public Claim[] GetClaimsForProperty(String property)
         {
-            return claims.ContainsKey(property) ? new Dictionary<String, Claim>(claims[property]) : null;
+            var claimList = from c in Claims
+                            where c.mainSnak.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                            select c;
+
+            return claimList.ToArray();
         }
 
         /// <summary>
@@ -481,12 +468,10 @@ namespace Wikibase
         /// <param name="claim">The claim.</param>
         internal void addClaim(Claim claim)
         {
-            string property = claim.mainSnak.PropertyId.PrefixedId;
-            if ( !this.claims.ContainsKey(property) )
+            if (!claims.Contains(claim))
             {
-                this.claims[property] = new Dictionary<string, Claim>();
-            }
-            this.claims[property][claim.internalId] = claim;
+                this.claims.Add(claim);
+            } 
         }
 
         /// <summary>
@@ -494,22 +479,10 @@ namespace Wikibase
         /// </summary>
         /// <param name="claim">The claim.</param>
         /// <returns><c>true</c> if the claim was removed successfully, <c>false</c> otherwise.</returns>
-        internal Boolean removeClaim(Claim claim)
+        internal bool removeClaim(Claim claim)
         {
-            string property = claim.mainSnak.PropertyId.PrefixedId;
-            if ( !this.claims.ContainsKey(property) )
-            {
-                return false;
-            }
-            if ( this.claims[property].Remove(claim.internalId) )
-            {
-                if ( this.claims[property].Count == 0 )
-                {
-                    this.claims.Remove(property);
-                }
+                claim.Delete();
                 return true;
-            }
-            return false;
         }
 
         /// <summary>

@@ -17,7 +17,8 @@ namespace Wikibase
         {
             Existing,
             New,
-            Removed
+            Deleted,
+            Modified
         }
 
         // TODO: Changes of qualifiers
@@ -88,11 +89,10 @@ namespace Wikibase
                     throw new ArgumentException("Different property id");
                 }
                 this.mMainSnak = value;
-                this.changes.set("mainsnak", value.Encode());
+                if (this.status == ClaimStatus.Existing)
+                    this.status = ClaimStatus.Modified;
             }
         }
-
-        private JsonObject changes = new JsonObject();
 
         /// <summary>
         /// Creates a new instance.
@@ -193,8 +193,6 @@ namespace Wikibase
                     .add("type", type)
             );
             claim.status = ClaimStatus.New;
-            claim.changes = new JsonObject()
-                .add("mainsnak", snak.Encode());
             entity.addClaim(claim);
             return claim;
         }
@@ -205,29 +203,39 @@ namespace Wikibase
         /// <param name="summary">Edit summary.</param>
         public void save(String summary)
         {
-            if ( !this.changes.isEmpty() )
+
+            Dictionary<SnakType, String> snakTypeIdentifiers = new Dictionary<SnakType, String>()
             {
-                if ( this.changes.get("mainsnak") != null )
-                {
-                    JsonObject change = this.changes.get("mainsnak").asObject();
-                    if ( change.get("snaktype") == null || change.get("property") == null )
-                    {
-                        throw new InvalidOperationException("The main snak does not have required data");
-                    }
-                    DataValue value = change.get("datavalue") == null ? null : DataValueFactory.CreateFromJsonObject(change.get("datavalue").asObject());
-                    JsonObject result;
-                    if ( this.id == null )
-                    {
-                        result = this.entity.api.createClaim(this.entity.id.PrefixedId, change.get("snaktype").asString(), change.get("property").asString(), value, this.entity.lastRevisionId, summary);
-                    }
-                    else
-                    {
-                        result = this.entity.api.setClaimValue(this.id, change.get("snaktype").asString(), value, this.entity.lastRevisionId, summary);
-                    }
+                {SnakType.None,"novalue"},
+                {SnakType.SomeValue,"somevalue"},
+                {SnakType.Value,"value"},
+            };
+
+            JsonObject result;
+            switch (this.status)
+            {
+                case ClaimStatus.New:
+                    result = this.entity.api.createClaim(
+                        this.entity.id.PrefixedId,
+                        snakTypeIdentifiers[this.mainSnak.Type],
+                        this.mainSnak.PropertyId.PrefixedId,
+                        this.mainSnak.DataValue,
+                        this.entity.lastRevisionId,
+                        summary);
                     this.updateDataFromResult(result);
-                    this.changes.removeAt("mainsnak");
-                }
+                    break;
+                case ClaimStatus.Modified:
+                     result = this.entity.api.setClaimValue(
+                            this.id,
+                            snakTypeIdentifiers[this.mainSnak.Type],
+                            this.mainSnak.DataValue,
+                            this.entity.lastRevisionId,
+                            summary);
+                            this.updateDataFromResult(result);
+                    break;
+
             }
+            
         }
 
         /// <summary>
@@ -245,6 +253,15 @@ namespace Wikibase
             }
             this.entity.updateLastRevisionIdFromResult(result);
         }
+
+        /// <summary>
+        /// Marks the claim as deleted
+        /// </summary>
+        public void Delete()
+        {
+            this.status = ClaimStatus.Deleted;
+        }
+
 
         /// <summary>
         /// Deletes the claim both within its <see cref="entity"/> as well as on the server.
