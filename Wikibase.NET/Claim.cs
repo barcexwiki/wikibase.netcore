@@ -27,7 +27,7 @@ namespace Wikibase
         /// Gets the entity.
         /// </summary>
         /// <value>The entitiy.</value>
-        public Entity entity
+        public Entity Entity
         {
             get;
             private set;
@@ -38,7 +38,7 @@ namespace Wikibase
         /// </summary>
         /// <value>The id.</value>
         /// <remarks>Consists of the property id plus an internal identifier. Is <c>null</c> if not saved to server yet.</remarks>
-        public String id
+        public String Id
         {
             get;
             private set;
@@ -48,8 +48,8 @@ namespace Wikibase
         /// Gets the id used internally.
         /// </summary>
         /// <value>The internally used id.</value>
-        /// <remarks>Consists of the property id plus an internal identifier. It is equal to <see cref="id"/> if the claim was parsed from server results.</remarks>
-        public String internalId
+        /// <remarks>Consists of the property id plus an internal identifier. It is equal to <see cref="Id"/> if the claim was parsed from server results.</remarks>
+        public String InternalId
         {
             get;
             private set;
@@ -68,27 +68,27 @@ namespace Wikibase
 
         internal ClaimStatus status;
 
-        private Snak mMainSnak;
+        private Snak mainSnak;
 
         /// <summary>
         /// The main snak
         /// </summary>
-        public Snak mainSnak
+        public Snak MainSnak
         {
             get
             {
-                return mMainSnak;
+                return mainSnak;
             }
             set
             {
                 if ( value == null )
                     throw new ArgumentNullException("value");
 
-                if ( !this.mMainSnak.PropertyId.Equals(value.PropertyId) )
+                if ( !this.mainSnak.PropertyId.Equals(value.PropertyId) )
                 {
                     throw new ArgumentException("Different property id");
                 }
-                this.mMainSnak = value;
+                this.mainSnak = value;
                 if (this.status == ClaimStatus.Existing)
                     this.status = ClaimStatus.Modified;
             }
@@ -102,8 +102,23 @@ namespace Wikibase
         internal Claim(Entity entity, JsonObject data)
         {
             Qualifiers = new ObservableCollection<Qualifier>();
-            this.entity = entity;
+            this.Entity = entity;
             this.FillData(data);
+        }
+
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="entity">Entity to which the statement belongs.</param>
+        /// <param name="snak">Snak for the statement.</param>
+        protected Claim(Entity entity, Snak snak)
+        {
+            this.Entity = entity;
+            this.mainSnak = snak;
+            this.Id = null;
+            Qualifiers = new ObservableCollection<Qualifier>();
+            this.InternalId = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
+            this.status = ClaimStatus.New;
         }
 
         /// <summary>
@@ -118,11 +133,11 @@ namespace Wikibase
 
             if ( data.get("mainsnak") != null )
             {
-                this.mMainSnak = new Snak(data.get("mainsnak").asObject());
+                this.mainSnak = new Snak(data.get("mainsnak").asObject());
             }
             if ( data.get("id") != null )
             {
-                this.id = data.get("id").asString();
+                this.Id = data.get("id").asString();
             }
             var qualifiersData = data.get("qualifiers");
             if ( qualifiersData != null && qualifiersData.isObject() )
@@ -139,22 +154,23 @@ namespace Wikibase
                     }
                 }
             }
-            if ( this.internalId == null )
+            if ( this.InternalId == null )
             {
-                if ( this.id != null )
+                if ( this.Id != null )
                 {
-                    this.internalId = this.id;
+                    this.InternalId = this.Id;
                 }
                 else
                 {
-                    this.internalId = "" + Environment.TickCount + this.mMainSnak.PropertyId + this.mMainSnak.DataValue;
+                    this.InternalId = this.Entity.Id.PrefixedId+"$"+Guid.NewGuid().ToString();
+                    //this.internalId = "" + Environment.TickCount + this.mMainSnak.PropertyId + this.mMainSnak.DataValue;
                 }
             }
 
             this.status = ClaimStatus.Existing;
         }
 
-        internal static Claim newFromArray(Entity entity, JsonObject data)
+        internal static Claim NewFromArray(Entity entity, JsonObject data)
         {
             if ( entity == null )
                 throw new ArgumentNullException("entity");
@@ -173,35 +189,10 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Create a claim from a <see cref="Snak"/>.
-        /// </summary>
-        /// <param name="entity">Entity to which the claim should be added.</param>
-        /// <param name="snak">Snak to be parsed.</param>
-        /// <param name="type">Type of snak.</param>
-        /// <returns>Newly created claim.</returns>
-        public static Claim newFromSnak(Entity entity, Snak snak, String type)
-        {
-            if ( entity == null )
-                throw new ArgumentNullException("entity");
-            if ( snak == null )
-                throw new ArgumentNullException("snak");
-
-            Claim claim = newFromArray(
-                entity,
-                new JsonObject()
-                    .add("mainsnak", snak.Encode())
-                    .add("type", type)
-            );
-            claim.status = ClaimStatus.New;
-            entity.addClaim(claim);
-            return claim;
-        }
-
-        /// <summary>
         /// Saves the claim to the server.
         /// </summary>
         /// <param name="summary">Edit summary.</param>
-        public void save(String summary)
+        internal void Save(String summary)
         {
 
             Dictionary<SnakType, String> snakTypeIdentifiers = new Dictionary<SnakType, String>()
@@ -215,23 +206,21 @@ namespace Wikibase
             switch (this.status)
             {
                 case ClaimStatus.New:
-                    result = this.entity.api.createClaim(
-                        this.entity.id.PrefixedId,
-                        snakTypeIdentifiers[this.mainSnak.Type],
-                        this.mainSnak.PropertyId.PrefixedId,
-                        this.mainSnak.DataValue,
-                        this.entity.lastRevisionId,
-                        summary);
-                    this.updateDataFromResult(result);
+                    result = this.Entity.Api.setClaim(this.Encode().ToString(), this.Entity.LastRevisionId, "");
+                    this.UpdateDataFromResult(result);
+                    break;
+                case ClaimStatus.Deleted:
+                    result = this.Entity.Api.removeClaims(new string[] { this.Id }, this.Entity.LastRevisionId, "");
+                    this.UpdateDataFromResult(result);
                     break;
                 case ClaimStatus.Modified:
-                     result = this.entity.api.setClaimValue(
-                            this.id,
-                            snakTypeIdentifiers[this.mainSnak.Type],
-                            this.mainSnak.DataValue,
-                            this.entity.lastRevisionId,
+                     result = this.Entity.Api.setClaimValue(
+                            this.Id,
+                            snakTypeIdentifiers[this.MainSnak.Type],
+                            this.MainSnak.DataValue,
+                            this.Entity.LastRevisionId,
                             summary);
-                            this.updateDataFromResult(result);
+                            this.UpdateDataFromResult(result);
                     break;
 
             }
@@ -242,7 +231,7 @@ namespace Wikibase
         /// Updates instance from API call result.
         /// </summary>
         /// <param name="result">Json result.</param>
-        protected void updateDataFromResult(JsonObject result)
+        protected void UpdateDataFromResult(JsonObject result)
         {
             if ( result == null )
                 throw new ArgumentNullException("result");
@@ -251,29 +240,15 @@ namespace Wikibase
             {
                 this.FillData(result.get("claim").asObject());
             }
-            this.entity.updateLastRevisionIdFromResult(result);
+            this.Entity.UpdateLastRevisionIdFromResult(result);
         }
 
         /// <summary>
         /// Marks the claim as deleted
         /// </summary>
-        public void Delete()
+        internal void Delete()
         {
             this.status = ClaimStatus.Deleted;
-        }
-
-
-        /// <summary>
-        /// Deletes the claim both within its <see cref="entity"/> as well as on the server.
-        /// </summary>
-        /// <param name="summary">The edit summary.</param>
-        public void deleteAndSave(String summary)
-        {
-            if ( this.id != null )
-            {
-                this.entity.api.removeClaims(new string[] { this.id }, this.entity.lastRevisionId, summary);
-            }
-            this.entity.removeClaim(this);
         }
 
         /// <summary>
@@ -284,7 +259,20 @@ namespace Wikibase
         public Boolean IsAboutProperty(String value)
         {
             var property = new EntityId(value);
-            return property.Equals(mainSnak.PropertyId);
+            return property.Equals(MainSnak.PropertyId);
+        }
+
+        /// <summary>
+        /// Encodes this claim in a JsonObject
+        /// </summary>
+        /// <returns>a JsonObject with the claim encoded.</returns>
+        protected virtual JsonObject Encode()
+        {
+            JsonObject encoded = new JsonObject()
+                .add("mainsnak", MainSnak.Encode())
+                .add("id", this.Id != null ? this.Id : this.InternalId);
+
+            return encoded;
         }
     }
 }

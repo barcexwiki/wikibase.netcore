@@ -77,7 +77,7 @@ namespace Wikibase
                 }
                 else
                 {
-                    this.InternalId = "" + Environment.TickCount + this.Statement.internalId;
+                    this.InternalId = "" + Environment.TickCount + this.Statement.InternalId;
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace Wikibase
             {
                 AddSnak(snak);
             }
-            this.InternalId = Environment.TickCount + this.Statement.internalId;
+            this.InternalId = Environment.TickCount + this.Statement.InternalId;
             statement.AddReference(this);
         }
 
@@ -175,7 +175,7 @@ namespace Wikibase
         /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
         public void Save(String summary)
         {
-            if (this.Statement.id == null)
+            if (this.Statement.Id == null)
             {
                 throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
             }
@@ -189,7 +189,7 @@ namespace Wikibase
                 }
                 obj.add(pair.Key, array);
             }
-            JsonObject result = this.Statement.entity.api.setReference(this.Statement.id, obj, this.Hash, this.Statement.entity.lastRevisionId, summary);
+            JsonObject result = this.Statement.Entity.Api.setReference(this.Statement.Id, obj, this.Hash, this.Statement.Entity.LastRevisionId, summary);
             this.UpdateDataFromResult(result);
         }
 
@@ -206,7 +206,7 @@ namespace Wikibase
             {
                 this.FillData(result.get("reference").asObject());
             }
-            this.Statement.entity.updateLastRevisionIdFromResult(result);
+            this.Statement.Entity.UpdateLastRevisionIdFromResult(result);
         }
 
         /// <summary>
@@ -216,13 +216,13 @@ namespace Wikibase
         /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
         public void DeleteAndSave(String summary)
         {
-            if (this.Statement.id == null)
+            if (this.Statement.Id == null)
             {
                 throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
             }
             if (this.Hash != null)
             {
-                this.Statement.entity.api.removeReferences(this.Statement.id, new String[] { this.Hash }, this.Statement.entity.lastRevisionId, summary);
+                this.Statement.Entity.Api.removeReferences(this.Statement.Id, new String[] { this.Hash }, this.Statement.Entity.LastRevisionId, summary);
             }
             this.Statement.RemoveReference(this);
         }

@@ -95,7 +95,7 @@ namespace Wikibase
                 {
                     if ( member.value.asObject().get("missing") == null )
                     {
-                        entities.Add(Entity.newFromArray(this, member.value.asObject()));
+                        entities.Add(Entity.NewFromArray(this, member.value.asObject()));
                     }
                 }
             }
@@ -171,6 +171,27 @@ namespace Wikibase
             }
             return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
+
+        /// <summary>
+        /// Create a claim.
+        /// </summary>
+        /// <param name="claim">Statement or claim serialization</param>
+        /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
+        /// <param name="summary">The summary for the change.</param>
+        /// <returns>The returned json object from the server.</returns>
+        internal JsonObject setClaim(String claim, Int32 baseRevisionId, String summary)
+        {
+            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            {
+                { "action", "wbsetclaim" }
+            };
+            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            {
+                { "claim", claim }
+            };
+            return this.editAction(parameters, postFields, baseRevisionId, summary);
+        }
+
 
         /// <summary>
         /// Set a claim value.

@@ -38,7 +38,7 @@ namespace Wikibase
         /// <summary>
         /// The entity id
         /// </summary>
-        public EntityId id
+        public EntityId Id
         {
             get;
             private set;
@@ -47,7 +47,7 @@ namespace Wikibase
         /// <summary>
         /// The last revision id
         /// </summary>
-        public int lastRevisionId
+        public int LastRevisionId
         {
             get;
             set;
@@ -56,7 +56,7 @@ namespace Wikibase
         /// <summary>
         /// The api
         /// </summary>
-        public WikibaseApi api
+        public WikibaseApi Api
         {
             get;
             private set;
@@ -114,8 +114,8 @@ namespace Wikibase
         /// <param name="data">The json object to be parsed.</param>
         internal Entity(WikibaseApi api, JsonObject data)
         {
-            this.api = api;
-            this.fillData(data);
+            this.Api = api;
+            this.FillData(data);
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="data"><see cref="JsonObject"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected virtual void fillData(JsonObject data)
+        protected virtual void FillData(JsonObject data)
         {
             if ( data == null )
                 throw new ArgumentNullException("data");
@@ -134,11 +134,11 @@ namespace Wikibase
 
             if ( data.get("id") != null )
             {
-                this.id = new EntityId(data.get("id").asString());
+                this.Id = new EntityId(data.get("id").asString());
             }
             if ( data.get("lastrevid") != null )
             {
-                this.lastRevisionId = data.get("lastrevid").asInt();
+                this.LastRevisionId = data.get("lastrevid").asInt();
             }
             JsonValue returnedLabels = data.get("labels");
             if ( (returnedLabels != null) && (returnedLabels.isObject()) )
@@ -183,14 +183,14 @@ namespace Wikibase
                 {
                     foreach ( JsonValue value in member.value.asArray() )
                     {
-                        Claim claim = Claim.newFromArray(this, value.asObject());
+                        Claim claim = Claim.NewFromArray(this, value.asObject());
                         claims.Add(claim);
                     }
                 }
             }
         }
 
-        internal static Entity newFromArray(WikibaseApi api, JsonObject data)
+        internal static Entity NewFromArray(WikibaseApi api, JsonObject data)
         {
             if ( data.get("type") != null )
             {
@@ -210,7 +210,7 @@ namespace Wikibase
         /// </summary>
         /// <returns>The labels</returns>
         /// <remarks>Key is the language, value the label.</remarks>
-        public Dictionary<String, String> getLabels()
+        public Dictionary<String, String> GetLabels()
         {
             return new Dictionary<String, String>(labels);
         }
@@ -221,7 +221,7 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <returns>The label.</returns>
         /// <exception cref="ArgumentException"><paramref name="lang"/> is empty string or <c>null</c>.</exception>
-        public String getLabel(String lang)
+        public String GetLabel(String lang)
         {
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
@@ -234,14 +234,14 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <param name="value">The label.</param>
         /// <exception cref="ArgumentException"><paramref name="lang"/> or <paramref name="value"/> is empty string or <c>null</c>.</exception>
-        public void setLabel(String lang, String value)
+        public void SetLabel(String lang, String value)
         {
             if ( String.IsNullOrWhiteSpace(value) )
                 throw new ArgumentException("empty description");
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
 
-            if ( getLabel(lang) != value )
+            if ( GetLabel(lang) != value )
             {
                 this.labels[lang] = value;
                 this.dirtyLabels.Add(lang);
@@ -254,7 +254,7 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <returns><c>true</c> if the label was removed successfully, <c>false</c> otherwise.</returns>
         /// <exception cref="ArgumentException"><paramref name="lang"/> is empty string or <c>null</c>.</exception>
-        public Boolean removeLabel(String lang)
+        public Boolean RemoveLabel(String lang)
         {
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
@@ -271,7 +271,7 @@ namespace Wikibase
         /// </summary>
         /// <returns>The descriptions.</returns>
         /// <remarks>Keys is the language, value the description.</remarks>
-        public Dictionary<String, String> getDescriptions()
+        public Dictionary<String, String> GetDescriptions()
         {
             return new Dictionary<String, String>(descriptions);
         }
@@ -282,7 +282,7 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <returns>The description.</returns>
         /// <exception cref="ArgumentException"><paramref name="lang"/> is empty string or <c>null</c>.</exception>
-        public string getDescription(String lang)
+        public string GetDescription(String lang)
         {
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
@@ -295,14 +295,14 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <param name="value">The description.</param>
         /// <exception cref="ArgumentException"><paramref name="lang"/> or <paramref name="value"/> is empty string or <c>null</c>.</exception>
-        public void setDescription(String lang, String value)
+        public void SetDescription(String lang, String value)
         {
             if ( String.IsNullOrWhiteSpace(value) )
                 throw new ArgumentException("empty description");
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
 
-            if (getDescription(lang) != value)
+            if (GetDescription(lang) != value)
             {
                 this.descriptions[lang] = value;
                 this.dirtyDescriptions.Add(lang);
@@ -315,7 +315,7 @@ namespace Wikibase
         /// <param name="lang">The language.</param>
         /// <returns><c>true</c> if the description was removed successfully, <c>false</c> otherwise.</returns>
         /// <exception cref="ArgumentException"><paramref name="lang"/> is empty string or <c>null</c>.</exception>
-        public Boolean removeDescription(String lang)
+        public Boolean RemoveDescription(String lang)
         {
             if ( String.IsNullOrWhiteSpace(lang) )
                 throw new ArgumentException("empty language");
@@ -453,25 +453,13 @@ namespace Wikibase
         /// </summary>
         /// <param name="property">The property.</param>
         /// <returns>The claims.</returns>
-        public Claim[] GetClaimsForProperty(String property)
+        public Claim[] GetClaims(String property)
         {
             var claimList = from c in Claims
-                            where c.mainSnak.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                            where c.MainSnak.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
                             select c;
 
             return claimList.ToArray();
-        }
-
-        /// <summary>
-        /// Add the claim.
-        /// </summary>
-        /// <param name="claim">The claim.</param>
-        internal void addClaim(Claim claim)
-        {
-            if (!claims.Contains(claim))
-            {
-                this.claims.Add(claim);
-            } 
         }
 
         /// <summary>
@@ -479,17 +467,23 @@ namespace Wikibase
         /// </summary>
         /// <param name="claim">The claim.</param>
         /// <returns><c>true</c> if the claim was removed successfully, <c>false</c> otherwise.</returns>
-        internal bool removeClaim(Claim claim)
+        public bool RemoveClaim(Claim claim)
         {
-                claim.Delete();
-                return true;
+                if (claims.Contains(claim))
+                {
+                    claim.Delete();
+                    return true;
+                } else
+                {
+                return false;
+                }
         }
 
         /// <summary>
         /// Save all changes.
         /// </summary>
         /// <param name="summary">The edit summary.</param>
-        public virtual void save(String summary)
+        public virtual void Save(String summary)
         {
             if ( dirtyLabels.Count > 0 )
             {
@@ -563,12 +557,16 @@ namespace Wikibase
                 this.changes.get("aliases").asArray().add(jsonAlias);
             }
 
-            foreach (Claim c in Claims)
+            foreach (Claim c in claims)
             {
                 switch (c.status)
                 {
+                    case Claim.ClaimStatus.Deleted:
+                        c.Save("");
+                        claims.Remove(c);
+                        break;
                     case Claim.ClaimStatus.New:
-                        c.save("");
+                        c.Save("");
                         break;
                 }
             }
@@ -576,36 +574,43 @@ namespace Wikibase
             if ( !this.changes.isEmpty() )
             {
                 JsonObject result;
-                if ( this.id == null )
+                if ( this.Id == null )
                 {
-                    result = this.api.createEntity(this.getType(), this.changes, this.lastRevisionId, summary);
+                    result = this.Api.createEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
                 }
                 else
                 {
-                    result = this.api.editEntity(this.id.PrefixedId, this.changes, this.lastRevisionId, summary);
+                    result = this.Api.editEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
                 }
                 if ( result.get("entity") != null )
                 {
-                    this.fillData(result.get("entity").asObject());
+                    this.FillData(result.get("entity").asObject());
                 }
-                this.updateLastRevisionIdFromResult(result);
+                this.UpdateLastRevisionIdFromResult(result);
                 this.changes = new JsonObject();
             }
 
         }
 
-        internal void updateLastRevisionIdFromResult(JsonObject result)
+        internal void UpdateLastRevisionIdFromResult(JsonObject result)
         {
             if ( result.get("pageinfo") != null && result.get("pageinfo").asObject().get("lastrevid") != null )
             {
-                this.lastRevisionId = result.get("pageinfo").asObject().get("lastrevid").asInt();
+                this.LastRevisionId = result.get("pageinfo").asObject().get("lastrevid").asInt();
             }
+        }
+
+        public Statement AddStatement(Snak snak, Rank rank)
+        {
+            Statement s = new Statement(this, snak, rank);
+            claims.Add(s);
+            return s;
         }
 
         /// <summary>
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected abstract String getType();
+        protected abstract String GetType();
     }
 }

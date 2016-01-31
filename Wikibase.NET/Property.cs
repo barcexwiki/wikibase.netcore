@@ -43,12 +43,12 @@ namespace Wikibase
         /// </summary>
         /// <param name="data"><see cref="JsonObject"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void fillData(JsonObject data)
+        protected override void FillData(JsonObject data)
         {
             if ( data == null )
                 throw new ArgumentNullException("data");
 
-            base.fillData(data);
+            base.FillData(data);
             if ( data.get("datatype") != null )
             {
                 this.datatype = data.get("datatype").asString();
@@ -59,7 +59,7 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override string getType()
+        protected override string GetType()
         {
             return "property";
         }

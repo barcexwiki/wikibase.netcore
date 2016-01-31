@@ -93,11 +93,11 @@ namespace Wikibase
         /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
         public void Save(String summary)
         {
-            if ( this.Statement.id == null )
+            if ( this.Statement.Id == null )
             {
                 throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
             }
-            JsonObject result = this.Statement.entity.api.setQualifier(this.Statement.id, _snakTypeIdentifiers[this.Type], this.PropertyId.PrefixedId, DataValue, this.Statement.entity.lastRevisionId, summary);
+            JsonObject result = this.Statement.Entity.Api.setQualifier(this.Statement.Id, _snakTypeIdentifiers[this.Type], this.PropertyId.PrefixedId, DataValue, this.Statement.Entity.LastRevisionId, summary);
             this.UpdateDataFromResult(result);
         }
 
@@ -131,7 +131,7 @@ namespace Wikibase
                 }
             }
 
-            this.Statement.entity.updateLastRevisionIdFromResult(result);
+            this.Statement.Entity.UpdateLastRevisionIdFromResult(result);
         }
     }
 }

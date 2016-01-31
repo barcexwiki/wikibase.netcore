@@ -66,12 +66,12 @@ namespace Wikibase
         /// </summary>
         /// <param name="data"><see cref="JsonObject"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void fillData(JsonObject data)
+        protected override void FillData(JsonObject data)
         {
             if ( data == null )
                 throw new ArgumentNullException("data");
 
-            base.fillData(data);
+            base.FillData(data);
             if ( data.get(SiteLinksJsonName) != null )
             {
                 this.sitelinks.Clear();
@@ -93,8 +93,8 @@ namespace Wikibase
         /// </summary>
         /// <returns>The sitelinks.</returns>
         /// <remarks>Key is the project name, value the page name. To modify the sitelinks, don't modify this dictionary, but use
-        /// <see cref="setSitelink"/> and <see cref="removeSitelink"/>.</remarks>
-        public Dictionary<String, String> getSitelinks()
+        /// <see cref="SetSitelink"/> and <see cref="RemoveSitelink"/>.</remarks>
+        public Dictionary<String, String> GetSitelinks()
         {
             return new Dictionary<String, String>(sitelinks);
         }
@@ -104,7 +104,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site</param>
         /// <returns></returns>
-        public String getSitelink(String site)
+        public String GetSitelink(String site)
         {
             return sitelinks[site];
         }
@@ -114,7 +114,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site.</param>
         /// <param name="title">The sitelink.</param>
-        public void setSitelink(String site, String title)
+        public void SetSitelink(String site, String title)
         {
 
             if (String.IsNullOrWhiteSpace(title))
@@ -131,7 +131,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site</param>
         /// <returns><c>true</c> if the sitelink was removed successfully, <c>false</c> otherwise.</returns>
-        public Boolean removeSitelink(String site)
+        public Boolean RemoveSitelink(String site)
         {
             if ( sitelinks.Remove(site) )
             {
@@ -145,26 +145,16 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override String getType()
+        protected override String GetType()
         {
             return "item";
-        }
-
-        /// <summary>
-        /// Create a new statement in this item for the provided snak.
-        /// </summary>
-        /// <param name="snak">The snak</param>
-        /// <returns>The statement</returns>
-        public Statement createStatementForSnak(Snak snak)
-        {
-            return (Statement)Claim.newFromSnak(this, snak, "statement");
         }
 
         /// <summary>
         /// Save all changes.
         /// </summary>
         /// <param name="summary">The edit summary.</param>
-        public override void save(string summary)
+        public override void Save(string summary)
         {
 
 
@@ -194,7 +184,7 @@ namespace Wikibase
                 }
             }
 
-            base.save(summary);
+            base.Save(summary);
 
             // Clears the dirty sets
             dirtySitelinks.Clear();

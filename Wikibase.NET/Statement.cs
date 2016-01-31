@@ -37,7 +37,7 @@ namespace Wikibase
     /// </summary>
     public class Statement : Claim
     {
-        #region Jscon names
+        #region Json names
 
         /// <summary>
         /// The name of the <see cref="References"/> property in the serialized json object.
@@ -53,7 +53,8 @@ namespace Wikibase
         {
              {Rank.Preferred, "preferred" },
              {Rank.Normal, "normal" },
-             {Rank.Deprecated, "deprecated" }
+             {Rank.Deprecated, "deprecated" },
+             {Rank.Unknown, "normal" } //TODO: fix this
         };
 
         #endregion Jscon names
@@ -81,6 +82,18 @@ namespace Wikibase
         internal Statement(Entity entity, JsonObject data)
             : base(entity, data)
         {
+        }
+
+        /// <summary>
+        /// Creates a new instance.
+        /// </summary>
+        /// <param name="entity">Entity to which the statement belongs.</param>
+        /// <param name="snak">Snak for the statement.</param>
+        /// <param name="rank">Rank for the statement.</param>
+        internal Statement(Entity entity, Snak snak, Rank rank)
+            : base(entity, snak)
+        {
+            this.Rank = rank;
         }
 
         /// <summary>
@@ -167,6 +180,20 @@ namespace Wikibase
                 throw new ArgumentNullException("snak");
 
             return new Reference(this, new Snak[] { snak });
+        }
+
+        /// <summary>
+        /// Encodes this statement in a JsonObject
+        /// </summary>
+        /// <returns>a JsonObject with the statement encoded.</returns>
+        protected override JsonObject Encode()
+        {
+            JsonObject encodedClaim =  base.Encode();
+
+            encodedClaim.add("type", "statement")
+                .add("rank", _rankJsonNames[Rank]);
+
+            return encodedClaim;
         }
     }
 }
