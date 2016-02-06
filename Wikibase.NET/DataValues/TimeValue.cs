@@ -441,12 +441,12 @@ namespace Wikibase.DataValues
 
         #region methods
 
-        private bool IsValidTimeOffset(int timeZoneOffset)
+        private static bool IsValidTimeOffset(int timeZoneOffset)
         {
             return timeZoneOffset>=-720 && timeZoneOffset<=720;
         }
 
-        private bool IsValidBeforeAfter(int amount)
+        private static bool IsValidBeforeAfter(int amount)
         {
             return amount>=0;
         }
