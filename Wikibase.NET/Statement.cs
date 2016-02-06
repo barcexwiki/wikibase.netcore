@@ -49,7 +49,7 @@ namespace Wikibase
         /// </summary>
         private const String RankJsonName = "rank";
 
-        private static Dictionary<Rank, String> _rankJsonNames = new Dictionary<Rank, String>()
+        private static Dictionary<Rank, String> rankJsonNames = new Dictionary<Rank, String>()
         {
              {Rank.Preferred, "preferred" },
              {Rank.Normal, "normal" },
@@ -115,9 +115,9 @@ namespace Wikibase
             if ( data.get(RankJsonName) != null )
             {
                 var rank = data.get(RankJsonName).asString();
-                if ( _rankJsonNames.Any(x => x.Value == rank) )
+                if ( rankJsonNames.Any(x => x.Value == rank) )
                 {
-                    this.Rank = _rankJsonNames.First(x => x.Value == rank).Key;
+                    this.Rank = rankJsonNames.First(x => x.Value == rank).Key;
                 }
                 else
                 {
@@ -126,6 +126,7 @@ namespace Wikibase
             }
             if ( data.get(ReferencesJsonName) != null )
             {
+                references.Clear();
                 foreach ( JsonValue value in data.get(ReferencesJsonName).asArray() )
                 {
                     Reference reference = new Reference(this, value.asObject());
@@ -184,7 +185,7 @@ namespace Wikibase
             JsonObject encodedClaim =  base.Encode();
 
             encodedClaim.add("type", "statement")
-                .add("rank", _rankJsonNames[Rank]);
+                .add("rank", rankJsonNames[Rank]);
 
 
             JsonArray referencesSection = new JsonArray();
