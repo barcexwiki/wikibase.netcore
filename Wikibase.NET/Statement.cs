@@ -137,14 +137,35 @@ namespace Wikibase
 
 
         /// <summary>
-        /// Adds a qualifier to the claim.
+        /// Adds a new reference in this statement with the provided snaks.
         /// </summary>
+        /// <param name="snaks">The snak which makes up the reference.</param>
+        /// <returns>The newly created reference.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="snaks"/> is <c>null</c>.</exception>
         public Reference AddReference(IEnumerable<Snak> snaks)
         {
+            if (snaks == null)
+                throw new ArgumentNullException("snaks");
+
             Reference reference = new Reference(this, snaks);
             AddReference(reference);
             return reference;
         }
+
+        /// <summary>
+        /// Adds a new reference in this statement with the provided snak.
+        /// </summary>
+        /// <param name="snak">The snak which makes up the reference.</param>
+        /// <returns>The newly created reference.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="snak"/> is <c>null</c>.</exception>
+        public Reference AddReference(Snak snak)
+        {
+            if (snak == null)
+                throw new ArgumentNullException("snak");
+
+            return AddReference(new Snak[] { snak });
+        }
+
 
         private Reference AddReference(Reference reference)
         {
@@ -160,20 +181,6 @@ namespace Wikibase
         {
             references.Remove(reference);
             Touch();
-        }
-
-        /// <summary>
-        /// Create a new reference in this statement with the provided snak.
-        /// </summary>
-        /// <param name="snak">The snak which makes up the reference.</param>
-        /// <returns>The newly created reference.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="snak"/> is <c>null</c>.</exception>
-        public Reference CreateReferenceForSnak(Snak snak)
-        {
-            if ( snak == null )
-                throw new ArgumentNullException("snak");
-
-            return new Reference(this, new Snak[] { snak });
         }
 
         /// <summary>
