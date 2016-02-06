@@ -220,11 +220,11 @@ namespace Wikibase
             {
                 case ClaimStatus.New:
                 case ClaimStatus.Modified:
-                    result = this.Entity.Api.setClaim(this.Encode().ToString(), this.Entity.LastRevisionId, "");
+                    result = this.Entity.Api.setClaim(this.Encode().ToString(), this.Entity.LastRevisionId, summary);
                     this.UpdateDataFromResult(result);
                     break;
                 case ClaimStatus.Deleted:
-                    result = this.Entity.Api.removeClaims(new string[] { this.Id }, this.Entity.LastRevisionId, "");
+                    result = this.Entity.Api.removeClaims(new string[] { this.Id }, this.Entity.LastRevisionId, summary);
                     this.UpdateDataFromResult(result);
                     break;
             }
