@@ -13,10 +13,10 @@ namespace Wikibase
     public class Qualifier : Snak
     {
         /// <summary>
-        /// Gets the statement this qualifier belongs to.
+        /// Gets the claim this qualifier belongs to.
         /// </summary>
-        /// <value>The statement this qualifier belongs to.</value>
-        public Claim Statement
+        /// <value>The claim this qualifier belongs to.</value>
+        public Claim Claim
         {
             get;
             private set;
@@ -38,12 +38,11 @@ namespace Wikibase
         /// <param name="type">The type</param>
         /// <param name="propertyId">The property id</param>
         /// <param name="dataValue">The data value</param>
-        /// <param name="statement">The statement this qualifier belongs to.</param>
-        public Qualifier(Statement statement, SnakType type, EntityId propertyId, DataValue dataValue)
+        /// <param name="claim">The claim this qualifier belongs to.</param>
+        internal Qualifier(Claim claim, SnakType type, EntityId propertyId, DataValue dataValue)
             : base(type, propertyId, dataValue)
         {
-            this.Statement = statement;
-            Statement.Qualifiers.Add(this);
+            this.Claim = claim;
         }
 
         /// <summary>
@@ -65,7 +64,7 @@ namespace Wikibase
             if ( data == null )
                 throw new ArgumentNullException("data");
 
-            this.Statement = statement;
+            this.Claim = statement;
             this.FillFromArray(data);
         }
 
@@ -91,13 +90,13 @@ namespace Wikibase
         /// </summary>
         /// <param name="summary">The summary</param>
         /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
-        public void Save(String summary)
+        internal void Save(String summary)
         {
-            if ( this.Statement.Id == null )
+            if ( this.Claim.Id == null )
             {
                 throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
             }
-            JsonObject result = this.Statement.Entity.Api.setQualifier(this.Statement.Id, _snakTypeIdentifiers[this.Type], this.PropertyId.PrefixedId, DataValue, this.Statement.Entity.LastRevisionId, summary);
+            JsonObject result = this.Claim.Entity.Api.setQualifier(this.Claim.Id, _snakTypeIdentifiers[this.Type], this.PropertyId.PrefixedId, DataValue, this.Claim.Entity.LastRevisionId, summary);
             this.UpdateDataFromResult(result);
         }
 
@@ -131,7 +130,7 @@ namespace Wikibase
                 }
             }
 
-            this.Statement.Entity.UpdateLastRevisionIdFromResult(result);
+            this.Claim.Entity.UpdateLastRevisionIdFromResult(result);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 using MinimalJson;
 using Wikibase.DataValues;
+using System.Linq;
 
 namespace Wikibase
 {
@@ -20,8 +21,6 @@ namespace Wikibase
             Deleted,
             Modified
         }
-
-        // TODO: Changes of qualifiers
 
         /// <summary>
         /// Gets the entity.
@@ -55,20 +54,21 @@ namespace Wikibase
             private set;
         }
 
-        // Change to a dictionary with property ID as key?
         /// <summary>
         /// Gets the collection of qualifiers assigned to the statement.
         /// </summary>
         /// <value>Collection of qualifiers.</value>
-        public ObservableCollection<Qualifier> Qualifiers
+        public IEnumerable<Qualifier> Qualifiers
         {
-            get;
-            private set;
+            get { return qualifiers; }
         }
+        private List<Qualifier> qualifiers = new List<Qualifier>();
 
         internal ClaimStatus status;
 
         private Snak mainSnak;
+
+        private List<EntityId> qualifiersOrder = new List<EntityId>();
 
         /// <summary>
         /// The main snak
@@ -89,8 +89,7 @@ namespace Wikibase
                     throw new ArgumentException("Different property id");
                 }
                 this.mainSnak = value;
-                if (this.status == ClaimStatus.Existing)
-                    this.status = ClaimStatus.Modified;
+                Touch();
             }
         }
 
@@ -101,7 +100,7 @@ namespace Wikibase
         /// <param name="data">JSon data to be parsed.</param>
         internal Claim(Entity entity, JsonObject data)
         {
-            Qualifiers = new ObservableCollection<Qualifier>();
+            qualifiers = new List<Qualifier>();
             this.Entity = entity;
             this.FillData(data);
         }
@@ -116,7 +115,7 @@ namespace Wikibase
             this.Entity = entity;
             this.mainSnak = snak;
             this.Id = null;
-            Qualifiers = new ObservableCollection<Qualifier>();
+            qualifiers = new List<Qualifier>();
             this.InternalId = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
             this.status = ClaimStatus.New;
         }
@@ -139,21 +138,36 @@ namespace Wikibase
             {
                 this.Id = data.get("id").asString();
             }
+
             var qualifiersData = data.get("qualifiers");
             if ( qualifiersData != null && qualifiersData.isObject() )
             {
-                var qualifiers = qualifiersData.asObject();
+                qualifiers.Clear();
+                var qualifiersSection = qualifiersData.asObject();
 
-                foreach ( var entry in qualifiers.names() )
+                foreach ( var entry in qualifiersSection.names() )
                 {
-                    var json = qualifiers.get(entry).asArray();
+                    var json = qualifiersSection.get(entry).asArray();
                     foreach ( var value in json )
                     {
                         var parsedQualifier = new Qualifier(this, value as JsonObject);
-                        Qualifiers.Add(parsedQualifier);
+                        AddQualifier(parsedQualifier);
                     }
                 }
             }
+
+            var qualifiersOrderSection = data.get("qualifiers-order");
+            if (qualifiersOrderSection != null && qualifiersOrderSection.isObject())
+            {
+                qualifiersOrder.Clear();
+                var qualifiersOrderArray = qualifiersOrderSection.asArray();
+
+                foreach ( var property in qualifiersOrderArray.getValues())
+                {
+                    qualifiersOrder.Add(new EntityId(property.asString()));
+                }
+            }
+
             if ( this.InternalId == null )
             {
                 if ( this.Id != null )
@@ -163,7 +177,6 @@ namespace Wikibase
                 else
                 {
                     this.InternalId = this.Entity.Id.PrefixedId+"$"+Guid.NewGuid().ToString();
-                    //this.internalId = "" + Environment.TickCount + this.mMainSnak.PropertyId + this.mMainSnak.DataValue;
                 }
             }
 
@@ -206,6 +219,7 @@ namespace Wikibase
             switch (this.status)
             {
                 case ClaimStatus.New:
+                case ClaimStatus.Modified:
                     result = this.Entity.Api.setClaim(this.Encode().ToString(), this.Entity.LastRevisionId, "");
                     this.UpdateDataFromResult(result);
                     break;
@@ -213,16 +227,6 @@ namespace Wikibase
                     result = this.Entity.Api.removeClaims(new string[] { this.Id }, this.Entity.LastRevisionId, "");
                     this.UpdateDataFromResult(result);
                     break;
-                case ClaimStatus.Modified:
-                     result = this.Entity.Api.setClaimValue(
-                            this.Id,
-                            snakTypeIdentifiers[this.MainSnak.Type],
-                            this.MainSnak.DataValue,
-                            this.Entity.LastRevisionId,
-                            summary);
-                            this.UpdateDataFromResult(result);
-                    break;
-
             }
             
         }
@@ -244,11 +248,52 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Marks the claim as deleted
+        /// Marks the claim as deleted.
         /// </summary>
         internal void Delete()
         {
             this.status = ClaimStatus.Deleted;
+        }
+
+        /// <summary>
+        /// Adds a qualifier to the claim.
+        /// </summary>
+        public Qualifier AddQualifier(SnakType type, EntityId propertyId, DataValue dataValue)
+        {
+            Qualifier q = new Qualifier(this, type, propertyId, dataValue);
+            AddQualifier(q);
+            return q;
+        }
+
+        /// <summary>
+        /// Removes a qualifier from the claim.
+        /// </summary>
+        public void RemoveQualifier(Qualifier q)
+        {
+            qualifiers.Remove(q);
+            if (!qualifiers.Where(x => x.PropertyId == q.PropertyId).Any() )
+            {
+                qualifiersOrder.Remove(q.PropertyId);
+            }
+            Touch();
+        }
+
+        private Qualifier AddQualifier(Qualifier q)
+        {
+            qualifiers.Add(q);
+            if (!qualifiersOrder.Contains(q.PropertyId))
+                qualifiersOrder.Add(q.PropertyId);
+            Touch();
+            return q;
+        }
+
+        /// <summary>
+        /// After a change inside the class it changes the status of the claim accordingly.
+        /// </summary>
+        private void Touch()
+        {
+            if (status == ClaimStatus.Existing)
+                status = ClaimStatus.Modified;           
         }
 
         /// <summary>
@@ -263,6 +308,22 @@ namespace Wikibase
         }
 
         /// <summary>
+        /// Get the qualifiers for the given property.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <returns>The qualifiers.</returns>
+        public Qualifier[] GetQualifiers(String property)
+        {
+            var qualifierList = from q in qualifiers
+                            where q.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                            select q;
+
+            return qualifierList.ToArray();
+        }
+
+
+
+        /// <summary>
         /// Encodes this claim in a JsonObject
         /// </summary>
         /// <returns>a JsonObject with the claim encoded.</returns>
@@ -271,6 +332,34 @@ namespace Wikibase
             JsonObject encoded = new JsonObject()
                 .add("mainsnak", MainSnak.Encode())
                 .add("id", this.Id != null ? this.Id : this.InternalId);
+
+            JsonObject qualifiersSection = new JsonObject();
+
+            foreach (EntityId property in qualifiersOrder)
+            {
+                var qualifiersForTheProperty = GetQualifiers(property.PrefixedId);
+
+                if (qualifiersForTheProperty.Any())
+                {
+                    var arrayOfQualifiers = new JsonArray();
+
+                    foreach ( Qualifier q in qualifiersForTheProperty)
+                    {
+                        arrayOfQualifiers.add(q.Encode());
+                    }
+
+                    qualifiersSection.add(property.PrefixedId.ToUpper(), arrayOfQualifiers);
+                }
+            }
+
+            JsonArray qualifiersOrderSection = new JsonArray();
+            foreach (EntityId property in qualifiersOrder)
+            {
+                qualifiersOrderSection.add(property.PrefixedId.ToUpper());
+            }
+
+            encoded.add("qualifiers", qualifiersSection);
+            encoded.add("qualifiers-order", qualifiersOrderSection);
 
             return encoded;
         }

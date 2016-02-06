@@ -366,8 +366,8 @@ namespace Wikibase
                                              where a.Language == lang && (a.Status == AliasStatus.Existing || a.Status == AliasStatus.New)
                                              select a.Label;
 
-            return filtered.Any() ? filtered.ToArray() : null;
-
+            //return filtered.Any() ? filtered.ToArray() : null;
+            return filtered.ToArray();
         }
 
 
@@ -471,6 +471,10 @@ namespace Wikibase
         {
                 if (claims.Contains(claim))
                 {
+                    if (claim.status == Claim.ClaimStatus.New)
+                    {
+                        this.claims.Remove(claim);
+                    }
                     claim.Delete();
                     return true;
                 } else
@@ -557,7 +561,9 @@ namespace Wikibase
                 this.changes.get("aliases").asArray().add(jsonAlias);
             }
 
-            foreach (Claim c in claims)
+            Claim[] claimsToProcess = claims.ToArray();
+
+            foreach (Claim c in claimsToProcess)
             {
                 switch (c.status)
                 {
@@ -565,6 +571,7 @@ namespace Wikibase
                         c.Save("");
                         claims.Remove(c);
                         break;
+                    case Claim.ClaimStatus.Modified:
                     case Claim.ClaimStatus.New:
                         c.Save("");
                         break;
