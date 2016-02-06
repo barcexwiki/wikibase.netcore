@@ -181,5 +181,15 @@ namespace Wikibase
             }
             return data;
         }
+
+        /// <summary>
+        /// Encodes this snak in a JSON representation
+        /// </summary>
+        /// <returns>string with the JSON representation of the snak</returns>
+        public string ToJson()
+        {
+            return Encode().ToString();
+        }
+
     }
 }

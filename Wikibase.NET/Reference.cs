@@ -29,7 +29,18 @@ namespace Wikibase
         /// <value>The internal id.</value>
         public String InternalId { get; private set; }
 
-        private Dictionary<String, Dictionary<String, Snak>> snaks = new Dictionary<String, Dictionary<String, Snak>>();
+        /// <summary>
+        /// Gets the collection of snaks assigned to the reference.
+        /// </summary>
+        /// <value>Collection of snaks.</value>
+        public IEnumerable<Snak> Snaks
+        {
+            get { return snaks; }
+        }
+
+        private List<Snak> snaks = new List<Snak>();
+
+        private List<EntityId> snaksOrder= new List<EntityId>();
 
         /// <summary>
         /// Creates a new reference by parsing the JSon result.
@@ -56,15 +67,26 @@ namespace Wikibase
             {
                 foreach (JsonObject.Member member in data.get("snaks").asObject())
                 {
-                    Dictionary<string, Snak> list = new Dictionary<string, Snak>();
                     foreach (JsonValue value in member.value.asArray())
                     {
                         Snak snak = new Snak(value.asObject());
-                        list.Add(snak.DataValue.getHash(), snak);
+                        this.snaks.Add(snak);
                     }
-                    this.snaks.Add(member.name, list);
                 }
             }
+
+            var snaksOrderSection = data.get("snaks-order");
+            if (snaksOrderSection != null && snaksOrderSection.isArray())
+            {
+                snaksOrder.Clear();
+                var snaksOrderArray = snaksOrderSection.asArray();
+
+                foreach (var property in snaksOrderArray.getValues())
+                {
+                    snaksOrder.Add(new EntityId(property.asString()));
+                }
+            }
+
             if (data.get("hash") != null)
             {
                 this.Hash = data.get("hash").asString();
@@ -90,7 +112,7 @@ namespace Wikibase
         /// <returns>New reference instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="statement"/> or <paramref name="snaks"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="snaks"/> is empty.</exception>
-        public Reference(Statement statement, IEnumerable<Snak> snaks)
+        internal Reference(Statement statement, IEnumerable<Snak> snaks)
         {
             if ( snaks == null )
                 throw new ArgumentNullException("snaks");
@@ -105,23 +127,22 @@ namespace Wikibase
                 AddSnak(snak);
             }
             this.InternalId = Environment.TickCount + this.Statement.InternalId;
-            statement.AddReference(this);
         }
 
         /// <summary>
-        /// Get all snaks.
+        /// Get the snaks for the given property.
         /// </summary>
-        /// <returns>The snaks</returns>
-        /// <remarks>Key is the prefixed property Id, value is a dictionary with <see cref="Wikibase.DataValues.DataValue.getHash"/> as key and the actual snak as value.</remarks>
-        public Dictionary<String, Dictionary<String, Snak>> getSnaks()
+        /// <param name="property">The property.</param>
+        /// <returns>The snaks.</returns>
+        public Snak[] GetSnaks(String property)
         {
-            Dictionary<String, Dictionary<String, Snak>> copy = new Dictionary<String, Dictionary<String, Snak>>(snaks);
-            foreach (KeyValuePair<String, Dictionary<String, Snak>> pair in snaks)
-            {
-                copy[pair.Key] = new Dictionary<String, Snak>(pair.Value);
-            }
-            return copy;
+            var snakList = from s in snaks
+                                where s.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                                select s;
+
+            return snakList.ToArray();
         }
+
 
         /// <summary>
         /// Add a snak.
@@ -133,64 +154,37 @@ namespace Wikibase
             if ( snak == null )
                 throw new ArgumentNullException("snak");
 
-            String property = snak.PropertyId.PrefixedId;
-            if (!this.snaks.ContainsKey(property))
-            {
-                this.snaks[property] = new Dictionary<String, Snak>();
-            }
-            this.snaks[property][snak.DataValue.getHash()] = snak;
+            snaks.Add(snak);
+
+            if (!snaksOrder.Contains(snak.PropertyId))
+                snaksOrder.Add(snak.PropertyId);
+            Touch();
         }
+
+
+        private void Touch()
+        {
+            this.Statement.Touch();
+        }
+
+
 
         /// <summary>
         /// Remove the snak.
         /// </summary>
         /// <param name="snak">The snak.</param>
-        /// <returns><c>true</c> if the snak was removed successfully, <c>false</c> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="snak"/> is <c>null</c>.</exception>
-        public Boolean RemoveSnak(Snak snak)
+        public void RemoveSnak(Snak snak)
         {
             if ( snak == null )
                 throw new ArgumentNullException("snak");
 
-            String property = snak.PropertyId.PrefixedId;
-            if (!this.snaks.ContainsKey(property))
+            snaks.Remove(snak);
+            if (!snaks.Where(x => x.PropertyId == snak.PropertyId).Any())
             {
-                return false;
+                snaksOrder.Remove(snak.PropertyId);
             }
-            if (this.snaks[property].Remove(snak.DataValue.getHash()))
-            {
-                if (this.snaks[property].Count == 0)
-                {
-                    this.snaks.Remove(property);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Save the reference.
-        /// </summary>
-        /// <param name="summary">The summary</param>
-        /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
-        public void Save(String summary)
-        {
-            if (this.Statement.Id == null)
-            {
-                throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
-            }
-            JsonObject obj = new JsonObject();
-            foreach (KeyValuePair<String, Dictionary<String, Snak>> pair in this.snaks)
-            {
-                JsonArray array = new JsonArray();
-                foreach(KeyValuePair<String, Snak> p in pair.Value)
-                {
-                    array.add(p.Value.Encode());
-                }
-                obj.add(pair.Key, array);
-            }
-            JsonObject result = this.Statement.Entity.Api.setReference(this.Statement.Id, obj, this.Hash, this.Statement.Entity.LastRevisionId, summary);
-            this.UpdateDataFromResult(result);
+            Touch();
         }
 
         /// <summary>
@@ -209,22 +203,60 @@ namespace Wikibase
             this.Statement.Entity.UpdateLastRevisionIdFromResult(result);
         }
 
+
         /// <summary>
-        /// Delete the reference and save the reference which contained it.
+        /// Encodes this referecne in a JsonObject
         /// </summary>
-        /// <param name="summary">The edit summary.</param>
-        /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
-        public void DeleteAndSave(String summary)
+        /// <returns>a JsonObject with the reference encoded.</returns>
+        internal virtual JsonObject Encode()
         {
-            if (this.Statement.Id == null)
+
+            JsonObject encoded = new JsonObject();
+
+            var snaksSection = new JsonObject();
+
+            foreach (EntityId property in snaksOrder)
             {
-                throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
+                var snaksForTheProperty = GetSnaks(property.PrefixedId);
+
+                if (snaksForTheProperty.Any())
+                {
+                    var arrayOfSnaks = new JsonArray();
+
+                    foreach (Snak s in snaksForTheProperty)
+                    {
+                        arrayOfSnaks.add(s.Encode());
+                    }
+
+                    snaksSection.add(property.PrefixedId.ToUpper(), arrayOfSnaks);
+                }
+
             }
-            if (this.Hash != null)
+
+            JsonArray snaksOrderSection = new JsonArray();
+            foreach (EntityId property in snaksOrder)
             {
-                this.Statement.Entity.Api.removeReferences(this.Statement.Id, new String[] { this.Hash }, this.Statement.Entity.LastRevisionId, summary);
+                snaksOrderSection.add(property.PrefixedId.ToUpper());
             }
-            this.Statement.RemoveReference(this);
+
+            encoded.add("snaks", snaksSection);
+            encoded.add("snaks-order", snaksOrderSection);
+
+            if (Hash != null)
+                encoded.add("hash", Hash);
+
+            return encoded;
         }
+
+        /// <summary>
+        /// Encodes this reference in a JSON representation
+        /// </summary>
+        /// <returns>string with the JSON representation of the reference</returns>
+        public string ToJson()
+        {
+            return Encode().ToString();
+        }
+
+
     }
 }

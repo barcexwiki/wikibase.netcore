@@ -70,9 +70,14 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Internal dictionary, storing the references by its <see cref="Reference.InternalId"/>.
+        /// Gets the collection of references assigned to the statement.
         /// </summary>
-        private Dictionary<String, Reference> references = new Dictionary<String, Reference>();
+        /// <value>Collection of qualifiers.</value>
+        public IEnumerable<Reference> References
+        {
+            get { return references; }
+        }
+        private List<Reference> references = new List<Reference>();
 
         /// <summary>
         /// Creates a new instance.
@@ -124,48 +129,36 @@ namespace Wikibase
                 foreach ( JsonValue value in data.get(ReferencesJsonName).asArray() )
                 {
                     Reference reference = new Reference(this, value.asObject());
-                    this.references[reference.InternalId]= reference;
+                    this.references.Add(reference);
                 }
             }
         }
 
+
         /// <summary>
-        /// Gets the references.
+        /// Adds a qualifier to the claim.
         /// </summary>
-        /// <value>The references.</value>
-        public IEnumerable<Reference> References
+        public Reference AddReference(IEnumerable<Snak> snaks)
         {
-            get
-            {
-                return references.Values;
-            }
+            Reference reference = new Reference(this, snaks);
+            AddReference(reference);
+            return reference;
+        }
+
+        private Reference AddReference(Reference reference)
+        {
+            references.Add(reference);
+            Touch();
+            return reference;
         }
 
         /// <summary>
-        /// Add the reference.
+        /// Removes a qualifier from the claim.
         /// </summary>
-        /// <param name="reference">The reference to add.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="reference"/> is <c>null</c>.</exception>
-        public void AddReference(Reference reference)
+        public void RemoveReference(Reference reference)
         {
-            if ( reference == null )
-                throw new ArgumentNullException("reference");
-
-            this.references[reference.InternalId] = reference;
-        }
-
-        /// <summary>
-        /// Remove a reference from the statement.
-        /// </summary>
-        /// <param name="reference">The reference to be removed.</param>
-        /// <returns><c>true</c> if the reference was removed successfully, <c>false</c> otherwise.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="reference"/> is <c>null</c>.</exception>
-        public Boolean RemoveReference(Reference reference)
-        {
-            if ( reference == null )
-                throw new ArgumentNullException("reference");
-
-            return this.references.Remove(reference.InternalId);
+            references.Remove(reference);
+            Touch();
         }
 
         /// <summary>
@@ -193,7 +186,18 @@ namespace Wikibase
             encodedClaim.add("type", "statement")
                 .add("rank", _rankJsonNames[Rank]);
 
+
+            JsonArray referencesSection = new JsonArray();
+
+            foreach (Reference reference in references)
+            {
+                referencesSection.add(reference.Encode());
+            }
+            encodedClaim.add("references", referencesSection);
+
+
             return encodedClaim;
         }
+
     }
 }

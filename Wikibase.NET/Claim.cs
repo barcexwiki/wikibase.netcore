@@ -55,7 +55,7 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Gets the collection of qualifiers assigned to the statement.
+        /// Gets the collection of qualifiers assigned to the claim.
         /// </summary>
         /// <value>Collection of qualifiers.</value>
         public IEnumerable<Qualifier> Qualifiers
@@ -151,13 +151,13 @@ namespace Wikibase
                     foreach ( var value in json )
                     {
                         var parsedQualifier = new Qualifier(this, value as JsonObject);
-                        AddQualifier(parsedQualifier);
+                        qualifiers.Add(parsedQualifier);
                     }
                 }
             }
 
             var qualifiersOrderSection = data.get("qualifiers-order");
-            if (qualifiersOrderSection != null && qualifiersOrderSection.isObject())
+            if (qualifiersOrderSection != null && qualifiersOrderSection.isArray())
             {
                 qualifiersOrder.Clear();
                 var qualifiersOrderArray = qualifiersOrderSection.asArray();
@@ -265,6 +265,15 @@ namespace Wikibase
             return q;
         }
 
+        private Qualifier AddQualifier(Qualifier q)
+        {
+            qualifiers.Add(q);
+            if (!qualifiersOrder.Contains(q.PropertyId))
+                qualifiersOrder.Add(q.PropertyId);
+            Touch();
+            return q;
+        }
+
         /// <summary>
         /// Removes a qualifier from the claim.
         /// </summary>
@@ -278,19 +287,11 @@ namespace Wikibase
             Touch();
         }
 
-        private Qualifier AddQualifier(Qualifier q)
-        {
-            qualifiers.Add(q);
-            if (!qualifiersOrder.Contains(q.PropertyId))
-                qualifiersOrder.Add(q.PropertyId);
-            Touch();
-            return q;
-        }
 
         /// <summary>
         /// After a change inside the class it changes the status of the claim accordingly.
         /// </summary>
-        private void Touch()
+        internal void Touch()
         {
             if (status == ClaimStatus.Existing)
                 status = ClaimStatus.Modified;           
@@ -362,6 +363,15 @@ namespace Wikibase
             encoded.add("qualifiers-order", qualifiersOrderSection);
 
             return encoded;
+        }
+
+        /// <summary>
+        /// Encodes this claim in a JSON representation
+        /// </summary>
+        /// <returns>string with the JSON representation of the claim</returns>
+        public string ToJson()
+        {
+            return Encode().ToString();
         }
     }
 }
