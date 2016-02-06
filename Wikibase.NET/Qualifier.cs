@@ -86,21 +86,6 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Save the qualifier.
-        /// </summary>
-        /// <param name="summary">The summary</param>
-        /// <exception cref="InvalidOperationException">Statement has no id because not saved yet.</exception>
-        internal void Save(String summary)
-        {
-            if ( this.Claim.Id == null )
-            {
-                throw new InvalidOperationException("The statement has no Id. Please save the statement containing it first.");
-            }
-            JsonObject result = this.Claim.Entity.Api.setQualifier(this.Claim.Id, _snakTypeIdentifiers[this.Type], this.PropertyId.PrefixedId, DataValue, this.Claim.Entity.LastRevisionId, summary);
-            this.UpdateDataFromResult(result);
-        }
-
-        /// <summary>
         /// Updates instance from API call result.
         /// </summary>
         /// <param name="result">Json result.</param>
