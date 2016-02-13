@@ -99,7 +99,7 @@ namespace Wikibase
                 }
                 else
                 {
-                    this.InternalId = "" + Environment.TickCount + this.Statement.InternalId;
+                    this.InternalId = "" + Environment.TickCount + this.Statement.Id;
                 }
             }
         }
@@ -126,7 +126,7 @@ namespace Wikibase
             {
                 AddSnak(snak);
             }
-            this.InternalId = Environment.TickCount + this.Statement.InternalId;
+            this.InternalId = Environment.TickCount + this.Statement.Id;
         }
 
         /// <summary>

@@ -44,17 +44,6 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Gets the id used internally.
-        /// </summary>
-        /// <value>The internally used id.</value>
-        /// <remarks>Consists of the property id plus an internal identifier. It is equal to <see cref="Id"/> if the claim was parsed from server results.</remarks>
-        public String InternalId
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
         /// Gets the collection of qualifiers assigned to the claim.
         /// </summary>
         /// <value>Collection of qualifiers.</value>
@@ -114,9 +103,8 @@ namespace Wikibase
         {
             this.Entity = entity;
             this.mainSnak = snak;
-            this.Id = null;
             qualifiers = new List<Qualifier>();
-            this.InternalId = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
+            this.Id = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
             this.status = ClaimStatus.New;
         }
 
@@ -165,18 +153,6 @@ namespace Wikibase
                 foreach ( var property in qualifiersOrderArray.getValues())
                 {
                     qualifiersOrder.Add(new EntityId(property.asString()));
-                }
-            }
-
-            if ( this.InternalId == null )
-            {
-                if ( this.Id != null )
-                {
-                    this.InternalId = this.Id;
-                }
-                else
-                {
-                    this.InternalId = this.Entity.Id.PrefixedId+"$"+Guid.NewGuid().ToString();
                 }
             }
 
@@ -332,7 +308,7 @@ namespace Wikibase
         {
             JsonObject encoded = new JsonObject()
                 .add("mainsnak", MainSnak.Encode())
-                .add("id", this.Id != null ? this.Id : this.InternalId);
+                .add("id", this.Id);
 
             JsonObject qualifiersSection = new JsonObject();
 
