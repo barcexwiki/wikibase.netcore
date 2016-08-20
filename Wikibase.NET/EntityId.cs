@@ -79,7 +79,7 @@ namespace Wikibase
 
         private void SetPrefix(String prefix)
         {
-            var prefixToFind = prefix.ToLower(CultureInfo.InvariantCulture);
+            var prefixToFind = CultureInfo.InvariantCulture.TextInfo.ToLower(prefix);
             if ( !_entityTypePrefixes.Values.Contains(prefixToFind) )
             {
                 throw new ArgumentException(String.Format("\"{0}\" is no recognized prefix", prefix));
@@ -107,7 +107,8 @@ namespace Wikibase
             Boolean success = false;
             if ( !String.IsNullOrWhiteSpace(prefixedId) )
             {
-                Match match = prefixedIdRegex.Match(prefixedId.ToLower(CultureInfo.InvariantCulture));
+                Match match = prefixedIdRegex.Match(CultureInfo.InvariantCulture.TextInfo.ToLower(prefixedId));
+
                 if ( match.Success )
                 {
                     if ( Array.Exists(prefixes, delegate(String s)
