@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using MinimalJson;
 using Wikibase.DataValues;
+using System.Threading.Tasks;
 
 namespace Wikibase
 {
@@ -358,7 +359,7 @@ namespace Wikibase
             {
                 Int32 wait = this.lastEditTimestamp + this.editLaps - time;
                 Console.WriteLine("Wait for {0} seconds...", wait / 1000);
-                Thread.Sleep(wait);
+                Task.Delay(wait).Wait();
             }
             this.lastEditTimestamp = Environment.TickCount;
             return this.post(parameters, postFields);
