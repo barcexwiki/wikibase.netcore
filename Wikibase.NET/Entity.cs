@@ -527,7 +527,7 @@ namespace Wikibase
                     string descriptionValue = "";
 
                     // If there is description the text is the label itself, if not is a removed label (i.e. empty)
-                    if (labels.ContainsKey(lang))
+                    if (descriptions.ContainsKey(lang))
                     {
                         descriptionValue = descriptions[lang];
                     }
