@@ -41,11 +41,11 @@ namespace Wikibase.DataValues
                 return String.Empty;
             }
             Byte[] result;
-            MD5CryptoServiceProvider md5provider = null;
+            MD5 md5provider = null;
             try
             {
-                md5provider = new MD5CryptoServiceProvider();
-                result = md5provider.ComputeHash(Encoding.Default.GetBytes(text));
+                md5provider = MD5.Create(); 
+                result = md5provider.ComputeHash(Encoding.GetEncoding(0).GetBytes(text));
             }
             finally
             {
