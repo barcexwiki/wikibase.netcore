@@ -578,7 +578,7 @@ namespace Wikibase
                 }
             }
    
-            if ( !this.changes.isEmpty() )
+            if ( !this.changes.isEmpty()  || this.Id == null )
             {
                 JsonObject result;
                 if ( this.Id == null )
