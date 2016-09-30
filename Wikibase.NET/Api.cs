@@ -77,7 +77,7 @@ namespace Wikibase
         public Api(String wiki, String userAgent)
         {
             if ( String.IsNullOrWhiteSpace(wiki) )
-                throw new ArgumentException("Inavlid base url", "wiki");
+                throw new ArgumentException("Invalid base url", "wiki");
             if ( userAgent == null )
                 throw new ArgumentNullException("userAgent");
 

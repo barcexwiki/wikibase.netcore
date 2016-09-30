@@ -18,7 +18,7 @@ namespace Wikibase
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="wiki">he base url of the wiki like "https://www.wikidata.org"</param>
+        /// <param name="wiki">The base url of the wiki like "https://www.wikidata.org"</param>
         public WikibaseApi(String wiki)
             : base(wiki)
         {
