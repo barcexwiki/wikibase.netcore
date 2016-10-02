@@ -57,7 +57,7 @@ namespace Wikibase.DataValues
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         internal MonolingualTextValue(JsonValue value)
         {
-            if ( value == null )
+            if (value == null)
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
@@ -171,6 +171,5 @@ namespace Wikibase.DataValues
                 return hashCode;
             }
         }
-
     }
 }

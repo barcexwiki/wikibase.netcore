@@ -115,7 +115,6 @@ namespace Wikibase.DataValues
     /// </summary>
     public class TimeValue : DataValue
     {
-
         private struct ParsedTime
         {
             public long year;
@@ -146,15 +145,15 @@ namespace Wikibase.DataValues
                     minute = int.Parse(m.Groups["minute"].Value);
                     second = int.Parse(m.Groups["second"].Value);
                     valid = (
-                                day <= 31 && 
+                                day <= 31 &&
                                 month <= 12 &&
-                                hour <= 60 && 
-                                minute <= 60 && 
+                                hour <= 60 &&
+                                minute <= 60 &&
                                 second <= 30 &&
                                 year <= 99999999999 &&
                                 year >= -99999999999
                             );
-                } 
+                }
 
                 if (!valid)
                     throw new FormatException("The format of the time is not valid");
@@ -210,16 +209,16 @@ namespace Wikibase.DataValues
 
         #region private fields
 
-        private static Dictionary<CalendarModel, String> _calendarModelIdentifiers = new Dictionary<CalendarModel, String>()
+        private static Dictionary<CalendarModel, String> s_calendarModelIdentifiers = new Dictionary<CalendarModel, String>()
         {
              {CalendarModel.GregorianCalendar, "http://www.wikidata.org/entity/Q1985727" },
              {CalendarModel.JulianCalendar, "http://www.wikidata.org/entity/Q1985786"}
         };
 
-        private ParsedTime time;
-        private int timeZoneOffset;
-        private int before;
-        private int after;
+        private ParsedTime _time;
+        private int _timeZoneOffset;
+        private int _before;
+        private int _after;
 
         #endregion private fields
 
@@ -243,11 +242,11 @@ namespace Wikibase.DataValues
 
         private DateTime GetDateTimeValue()
         {
-            if ( Time.StartsWith("+0000000", StringComparison.Ordinal) )
+            if (Time.StartsWith("+0000000", StringComparison.Ordinal))
             {
                 return DateTime.Parse(Time.Substring(8), CultureInfo.InvariantCulture);
             }
-            if ( Time.StartsWith("+", StringComparison.Ordinal) )
+            if (Time.StartsWith("+", StringComparison.Ordinal))
             {
                 return DateTime.Parse(Time.Substring(1), CultureInfo.InvariantCulture);
             }
@@ -263,21 +262,21 @@ namespace Wikibase.DataValues
         /// </summary>
         public String Time
         {
-            get 
-            { 
-                return time.ToString();
+            get
+            {
+                return _time.ToString();
             }
-            set 
+            set
             {
                 try
                 {
-                    time = new ParsedTime(value);
+                    _time = new ParsedTime(value);
                 }
                 catch
                 {
                     throw new ArgumentException("Time is not in the +yyyyyyyyyyyy-mm-ddThh:mm:ssZ format or it is out of range.", "Time");
                 }
-            }                
+            }
         }
 
         /// <summary>
@@ -287,12 +286,12 @@ namespace Wikibase.DataValues
         {
             get
             {
-                return timeZoneOffset;
+                return _timeZoneOffset;
             }
             set
             {
                 if (IsValidTimeOffset(value))
-                    timeZoneOffset = value;
+                    _timeZoneOffset = value;
                 else
                     throw new ArgumentOutOfRangeException("TimeOffset out of range (-720,720)", "TimeOffset");
             }
@@ -306,12 +305,12 @@ namespace Wikibase.DataValues
         {
             get
             {
-                return before;
+                return _before;
             }
             set
             {
                 if (IsValidBeforeAfter(value))
-                    before = value;
+                    _before = value;
                 else
                     throw new ArgumentOutOfRangeException("Before is out of range (cannot be negative)", "Before");
             }
@@ -325,12 +324,12 @@ namespace Wikibase.DataValues
         {
             get
             {
-                return after;
+                return _after;
             }
             set
             {
                 if (IsValidBeforeAfter(value))
-                    after = value;
+                    _after = value;
                 else
                     throw new ArgumentOutOfRangeException("After is out of range (cannot be negative)", "After");
             }
@@ -372,7 +371,6 @@ namespace Wikibase.DataValues
         /// <param name="calendarModel">Calendar model property.</param>
         public TimeValue(String time, Int32 timeZoneOffset, Int32 before, Int32 after, TimeValuePrecision precision, CalendarModel calendarModel)
         {
-
             if (!IsValidBeforeAfter(before))
                 throw new ArgumentException("Before is out of range (cannot be negative)", "before");
             if (!IsValidBeforeAfter(after))
@@ -380,17 +378,17 @@ namespace Wikibase.DataValues
 
             try
             {
-                this.time = new ParsedTime(time);
+                _time = new ParsedTime(time);
             }
             catch
             {
                 throw new ArgumentException("Time is not in a valid format.", "time");
             }
-                            
 
-            this.timeZoneOffset = timeZoneOffset;
-            this.before = before;
-            this.after = after;
+
+            _timeZoneOffset = timeZoneOffset;
+            _before = before;
+            _after = after;
             this.Precision = precision;
             this.DisplayCalendarModel = calendarModel;
         }
@@ -417,7 +415,7 @@ namespace Wikibase.DataValues
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         internal TimeValue(JsonValue value)
         {
-            if ( value == null )
+            if (value == null)
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
@@ -427,9 +425,9 @@ namespace Wikibase.DataValues
             this.After = obj.get(AfterJsonName).asInt();
             this.Precision = (TimeValuePrecision)obj.get(PrecisionJsonName).asInt();
             var calendar = obj.get(CalendarModelJsonName).asString();
-            if ( _calendarModelIdentifiers.Any(x => x.Value == calendar) )
+            if (s_calendarModelIdentifiers.Any(x => x.Value == calendar))
             {
-                this.DisplayCalendarModel = _calendarModelIdentifiers.First(x => x.Value == calendar).Key;
+                this.DisplayCalendarModel = s_calendarModelIdentifiers.First(x => x.Value == calendar).Key;
             }
             else
             {
@@ -443,12 +441,12 @@ namespace Wikibase.DataValues
 
         private static bool IsValidTimeOffset(int timeZoneOffset)
         {
-            return timeZoneOffset>=-720 && timeZoneOffset<=720;
+            return timeZoneOffset >= -720 && timeZoneOffset <= 720;
         }
 
         private static bool IsValidBeforeAfter(int amount)
         {
-            return amount>=0;
+            return amount >= 0;
         }
 
 
@@ -459,7 +457,7 @@ namespace Wikibase.DataValues
         /// <exception cref="InvalidOperationException"><see cref="DisplayCalendarModel"/> is <see cref="CalendarModel.Unknown"/>.</exception>
         internal override JsonValue Encode()
         {
-            if ( DisplayCalendarModel == CalendarModel.Unknown )
+            if (DisplayCalendarModel == CalendarModel.Unknown)
             {
                 throw new InvalidOperationException("Calendar model value not set.");
             }
@@ -470,7 +468,7 @@ namespace Wikibase.DataValues
                 .add(BeforeJsonName, Before)
                 .add(AfterJsonName, After)
                 .add(PrecisionJsonName, Convert.ToInt32(Precision))
-                .add(CalendarModelJsonName, _calendarModelIdentifiers[DisplayCalendarModel]);
+                .add(CalendarModelJsonName, s_calendarModelIdentifiers[DisplayCalendarModel]);
         }
 
         /// <summary>

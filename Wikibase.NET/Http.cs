@@ -22,7 +22,7 @@ namespace Wikibase
             set;
         }
 
-        private CookieContainer cookies = new CookieContainer();
+        private CookieContainer _cookies = new CookieContainer();
 
         /// <summary>
         /// Constructor
@@ -51,8 +51,7 @@ namespace Wikibase
         /// <returns>The response.</returns>
         public String post(String url, Dictionary<String, String> postFields)
         {
-
-            using (var _handler = new HttpClientHandler() { CookieContainer = cookies })
+            using (var _handler = new HttpClientHandler() { CookieContainer = _cookies })
             using (HttpClient _client = new HttpClient(_handler))
             {
                 _client.DefaultRequestHeaders.UserAgent.ParseAdd(this.UserAgent);
@@ -63,15 +62,14 @@ namespace Wikibase
                     HttpContent _body = new StringContent(this.buildQuery(postFields));
                     _body.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     response = _client.PostAsync(url, _body).Result;
-                } 
+                }
                 else
                 {
                     response = _client.GetAsync(url).Result;
-                }  
-               
+                }
+
                 return response.Content.ReadAsStringAsync().Result;
             }
-
         }
 
         /// <summary>

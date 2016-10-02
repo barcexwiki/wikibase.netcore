@@ -45,11 +45,11 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected override void FillData(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             base.FillData(data);
-            if ( data.get("datatype") != null )
+            if (data.get("datatype") != null)
             {
                 this.datatype = data.get("datatype").asString();
             }

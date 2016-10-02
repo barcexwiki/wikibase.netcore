@@ -132,14 +132,14 @@ namespace Wikibase.DataValues
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         internal QuantityValue(JsonValue value)
         {
-            if ( value == null )
+            if (value == null)
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
             this.Amount = Decimal.Parse(obj.get(AmountJsonName).asString(), CultureInfo.InvariantCulture);
             this.Unit = obj.get(UnitJsonName).asString();
-            this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(),CultureInfo.InvariantCulture);
-            this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(),CultureInfo.InvariantCulture);
+            this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(), CultureInfo.InvariantCulture);
+            this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(), CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -158,10 +158,10 @@ namespace Wikibase.DataValues
         internal override JsonValue Encode()
         {
             return new JsonObject()
-                .add(AmountJsonName, (Amount>=0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture))
+                .add(AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture))
                 .add(UnitJsonName, Unit)
-                .add(UpperBoundJsonName, (UpperBound>=0 ? "+" : "") + UpperBound.ToString(CultureInfo.InvariantCulture))
-                .add(LowerBoundJsonName, (LowerBound>=0 ? "+" : "") + LowerBound.ToString(CultureInfo.InvariantCulture));
+                .add(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.ToString(CultureInfo.InvariantCulture))
+                .add(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -247,6 +247,5 @@ namespace Wikibase.DataValues
                 return hashCode;
             }
         }
-
     }
 }

@@ -45,7 +45,7 @@ namespace Wikibase.DataValues
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         internal StringValue(JsonValue value)
         {
-            if ( value == null )
+            if (value == null)
                 throw new ArgumentNullException("value");
 
             this.Value = value.asString();
@@ -133,6 +133,5 @@ namespace Wikibase.DataValues
         {
             return Value.GetHashCode();
         }
-
     }
 }

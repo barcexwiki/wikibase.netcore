@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -14,9 +14,9 @@ namespace Wikibase
         private const String ApiName = "Wikibase.NET";
         private const String ApiVersion = "0.1";
 
-        private Http http;
-        private String wiki;
-        private String editToken;
+        private Http _http;
+        private String _wiki;
+        private String _editToken;
 
         /// <summary>
         /// Gets the sets the time stamp of the last API action.
@@ -76,13 +76,13 @@ namespace Wikibase
         /// <exception cref="ArgumentException"><paramref name="wiki"/> is empty or <c>null</c>.</exception>
         public Api(String wiki, String userAgent)
         {
-            if ( String.IsNullOrWhiteSpace(wiki) )
+            if (String.IsNullOrWhiteSpace(wiki))
                 throw new ArgumentException("Invalid base url", "wiki");
-            if ( userAgent == null )
+            if (userAgent == null)
                 throw new ArgumentNullException("userAgent");
 
-            this.wiki = wiki;
-            this.http = new Http(String.Format(CultureInfo.InvariantCulture, "{0} {1}/{2}", userAgent.Trim(), ApiName, ApiVersion));
+            _wiki = wiki;
+            _http = new Http(String.Format(CultureInfo.InvariantCulture, "{0} {1}/{2}", userAgent.Trim(), ApiName, ApiVersion));
         }
 
         /// <summary>
@@ -93,19 +93,19 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> is <c>null</c>.</exception>
         public JsonObject get(Dictionary<String, String> parameters)
         {
-            if ( parameters == null )
+            if (parameters == null)
                 throw new ArgumentNullException("parameters");
 
             parameters["format"] = "json";
-            String url = this.wiki + "/w/api.php?" + http.buildQuery(parameters);
-            String response = http.get(url);
+            String url = _wiki + "/w/api.php?" + _http.buildQuery(parameters);
+            String response = _http.get(url);
             JsonValue result = JsonValue.readFrom(response);
-            if ( !result.isObject() )
+            if (!result.isObject())
             {
                 return null;
             }
             JsonObject obj = result.asObject();
-            if ( obj.get("error") != null )
+            if (obj.get("error") != null)
             {
                 throw new ApiException(obj.get("error").asObject().get("info").asString());
             }
@@ -121,16 +121,16 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> or <paramref name="postFields"/> is <c>null</c>.</exception>
         public JsonObject post(Dictionary<String, String> parameters, Dictionary<String, String> postFields)
         {
-            if ( parameters == null )
+            if (parameters == null)
                 throw new ArgumentNullException("parameters");
-            if ( postFields == null )
+            if (postFields == null)
                 throw new ArgumentNullException("postFields");
 
             parameters["format"] = "json";
-            String url = this.wiki + "/w/api.php?" + http.buildQuery(parameters);
-            String response = http.post(url, postFields);
+            String url = _wiki + "/w/api.php?" + _http.buildQuery(parameters);
+            String response = _http.post(url, postFields);
             JsonObject result = JsonObject.readFrom(response);
-            if ( result.get("error") != null )
+            if (result.get("error") != null)
             {
                 throw new ApiException(result.get("error").asObject().get("info").asString());
             }
@@ -145,10 +145,10 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is <c>null</c>.</exception>
         public String[] getContinueParam(JsonObject result)
         {
-            if ( result == null )
+            if (result == null)
                 throw new ArgumentNullException("result");
 
-            if ( result.get("query-continue") != null )
+            if (result.get("query-continue") != null)
             {
                 List<String> keys = (List<String>)result.get("query-continue").asObject().names();
                 List<String> keys2 = (List<String>)result.get("query-continue").asObject().get(keys[0]).asObject().names();
@@ -178,14 +178,14 @@ namespace Wikibase
                 { "lgpassword", password }
             };
             JsonObject login = this.post(parameters, postFields).get("login").asObject();
-            if ( login.get("result").asString() == "NeedToken" )
+            if (login.get("result").asString() == "NeedToken")
             {
                 postFields["lgtoken"] = login.get("token").asString();
                 login = this.post(parameters, postFields).get("login").asObject();
             }
-            if ( login.get("result").asString() == "Success" )
+            if (login.get("result").asString() == "Success")
             {
-                this.editToken = null;
+                _editToken = null;
                 return true;
             }
             else
@@ -204,7 +204,7 @@ namespace Wikibase
                 { "action", "logout" }
             };
             this.get(parameters);
-            this.editToken = null;
+            _editToken = null;
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace Wikibase
         /// <returns>The edit token.</returns>
         public String getEditToken()
         {
-            if ( this.editToken == null )
+            if (_editToken == null)
             {
                 Dictionary<String, String> parameters = new Dictionary<String, String>()
                 {
@@ -223,12 +223,12 @@ namespace Wikibase
                     { "titles", "Main Page" }
                 };
                 JsonObject query = this.get(parameters).get("query").asObject();
-                foreach ( JsonObject.Member member in query.get("pages").asObject() )
+                foreach (JsonObject.Member member in query.get("pages").asObject())
                 {
                     return member.value.asObject().get("edittoken").asString();
                 }
             }
-            return editToken;
+            return _editToken;
         }
     }
 }

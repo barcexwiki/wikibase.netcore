@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -61,7 +65,7 @@ namespace Wikibase.DataValues
 
         #endregion Json names
 
-        private static Dictionary<Globe, String> _globeJsonNames = new Dictionary<Globe, String>()
+        private static Dictionary<Globe, String> s_globeJsonNames = new Dictionary<Globe, String>()
         {
              {Globe.Earth, "http://www.wikidata.org/entity/Q2" }
         };
@@ -128,7 +132,7 @@ namespace Wikibase.DataValues
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         internal GlobeCoordinateValue(JsonValue value)
         {
-            if ( value == null )
+            if (value == null)
                 throw new ArgumentNullException("value");
 
             JsonObject obj = value.asObject();
@@ -136,14 +140,14 @@ namespace Wikibase.DataValues
             this.Longitude = obj.get(LongitudeJsonName).asDouble();
             var altitude = obj.get(AltitudeJsonName);  // deprecated
             JsonValue precisionReceived = obj.get(PrecisionJsonName);
-            if ( precisionReceived != JsonValue.NULL )
+            if (precisionReceived != JsonValue.NULL)
             {
                 this.Precision = precisionReceived.asDouble();
             }
             var globe = obj.get(GlobeJsonName).asString();
-            if ( _globeJsonNames.Any(x => x.Value == globe) )
+            if (s_globeJsonNames.Any(x => x.Value == globe))
             {
-                this.Globe = _globeJsonNames.First(x => x.Value == globe).Key;
+                this.Globe = s_globeJsonNames.First(x => x.Value == globe).Key;
             }
             else
             {
@@ -167,7 +171,7 @@ namespace Wikibase.DataValues
         /// <exception cref="InvalidOperationException"><see cref="GlobeCoordinateValue.Globe"/> is <see cref="Wikibase.DataValues.Globe.Unknown"/>.</exception>
         internal override JsonValue Encode()
         {
-            if ( Globe == Globe.Unknown )
+            if (Globe == Globe.Unknown)
             {
                 throw new InvalidOperationException("Globe value not set.");
             }
@@ -177,7 +181,7 @@ namespace Wikibase.DataValues
                 .add(LongitudeJsonName, Longitude)
                 // .add(AltitudeJsonName, altitude.ToString())
                 .add(PrecisionJsonName, Precision)
-                .add(GlobeJsonName, _globeJsonNames[Globe]);
+                .add(GlobeJsonName, s_globeJsonNames[Globe]);
         }
 
 
@@ -264,6 +268,5 @@ namespace Wikibase.DataValues
                 return hashCode;
             }
         }
-
     }
 }

@@ -49,7 +49,7 @@ namespace Wikibase
         /// </summary>
         private const String RankJsonName = "rank";
 
-        private static Dictionary<Rank, String> rankJsonNames = new Dictionary<Rank, String>()
+        private static Dictionary<Rank, String> s_rankJsonNames = new Dictionary<Rank, String>()
         {
              {Rank.Preferred, "preferred" },
              {Rank.Normal, "normal" },
@@ -75,9 +75,9 @@ namespace Wikibase
         /// <value>Collection of qualifiers.</value>
         public IEnumerable<Reference> References
         {
-            get { return references; }
+            get { return _references; }
         }
-        private List<Reference> references = new List<Reference>();
+        private List<Reference> _references = new List<Reference>();
 
         /// <summary>
         /// Creates a new instance.
@@ -108,29 +108,29 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected override void FillData(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             base.FillData(data);
-            if ( data.get(RankJsonName) != null )
+            if (data.get(RankJsonName) != null)
             {
                 var rank = data.get(RankJsonName).asString();
-                if ( rankJsonNames.Any(x => x.Value == rank) )
+                if (s_rankJsonNames.Any(x => x.Value == rank))
                 {
-                    this.Rank = rankJsonNames.First(x => x.Value == rank).Key;
+                    this.Rank = s_rankJsonNames.First(x => x.Value == rank).Key;
                 }
                 else
                 {
                     this.Rank = Rank.Unknown;
                 }
             }
-            if ( data.get(ReferencesJsonName) != null )
+            if (data.get(ReferencesJsonName) != null)
             {
-                references.Clear();
-                foreach ( JsonValue value in data.get(ReferencesJsonName).asArray() )
+                _references.Clear();
+                foreach (JsonValue value in data.get(ReferencesJsonName).asArray())
                 {
                     Reference reference = new Reference(this, value.asObject());
-                    this.references.Add(reference);
+                    _references.Add(reference);
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace Wikibase
 
         private Reference AddReference(Reference reference)
         {
-            references.Add(reference);
+            _references.Add(reference);
             Touch();
             return reference;
         }
@@ -179,7 +179,7 @@ namespace Wikibase
         /// </summary>
         public void RemoveReference(Reference reference)
         {
-            references.Remove(reference);
+            _references.Remove(reference);
             Touch();
         }
 
@@ -189,15 +189,15 @@ namespace Wikibase
         /// <returns>a JsonObject with the statement encoded.</returns>
         protected override JsonObject Encode()
         {
-            JsonObject encodedClaim =  base.Encode();
+            JsonObject encodedClaim = base.Encode();
 
             encodedClaim.add("type", "statement")
-                .add("rank", rankJsonNames[Rank]);
+                .add("rank", s_rankJsonNames[Rank]);
 
 
             JsonArray referencesSection = new JsonArray();
 
-            foreach (Reference reference in references)
+            foreach (Reference reference in _references)
             {
                 referencesSection.add(reference.Encode());
             }
@@ -206,6 +206,5 @@ namespace Wikibase
 
             return encodedClaim;
         }
-
     }
 }

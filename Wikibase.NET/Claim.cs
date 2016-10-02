@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
@@ -13,7 +17,6 @@ namespace Wikibase
     /// </summary>
     public class Claim
     {
-
         internal enum ClaimStatus
         {
             Existing,
@@ -49,15 +52,15 @@ namespace Wikibase
         /// <value>Collection of qualifiers.</value>
         public IEnumerable<Qualifier> Qualifiers
         {
-            get { return qualifiers; }
+            get { return _qualifiers; }
         }
-        private List<Qualifier> qualifiers = new List<Qualifier>();
+        private List<Qualifier> _qualifiers = new List<Qualifier>();
 
         internal ClaimStatus status;
 
-        private Snak mainSnak;
+        private Snak _mainSnak;
 
-        private List<EntityId> qualifiersOrder = new List<EntityId>();
+        private List<EntityId> _qualifiersOrder = new List<EntityId>();
 
         /// <summary>
         /// The main snak
@@ -66,18 +69,18 @@ namespace Wikibase
         {
             get
             {
-                return mainSnak;
+                return _mainSnak;
             }
             set
             {
-                if ( value == null )
+                if (value == null)
                     throw new ArgumentNullException("value");
 
-                if ( !this.mainSnak.PropertyId.Equals(value.PropertyId) )
+                if (!_mainSnak.PropertyId.Equals(value.PropertyId))
                 {
                     throw new ArgumentException("Different property id");
                 }
-                this.mainSnak = value;
+                _mainSnak = value;
                 Touch();
             }
         }
@@ -89,7 +92,7 @@ namespace Wikibase
         /// <param name="data">JSon data to be parsed.</param>
         internal Claim(Entity entity, JsonObject data)
         {
-            qualifiers = new List<Qualifier>();
+            _qualifiers = new List<Qualifier>();
             this.Entity = entity;
             this.FillData(data);
         }
@@ -102,8 +105,8 @@ namespace Wikibase
         protected Claim(Entity entity, Snak snak)
         {
             this.Entity = entity;
-            this.mainSnak = snak;
-            qualifiers = new List<Qualifier>();
+            _mainSnak = snak;
+            _qualifiers = new List<Qualifier>();
             this.Id = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
             this.status = ClaimStatus.New;
         }
@@ -115,31 +118,31 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected virtual void FillData(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
-            if ( data.get("mainsnak") != null )
+            if (data.get("mainsnak") != null)
             {
-                this.mainSnak = new Snak(data.get("mainsnak").asObject());
+                _mainSnak = new Snak(data.get("mainsnak").asObject());
             }
-            if ( data.get("id") != null )
+            if (data.get("id") != null)
             {
                 this.Id = data.get("id").asString();
             }
 
             var qualifiersData = data.get("qualifiers");
-            if ( qualifiersData != null && qualifiersData.isObject() )
+            if (qualifiersData != null && qualifiersData.isObject())
             {
-                qualifiers.Clear();
+                _qualifiers.Clear();
                 var qualifiersSection = qualifiersData.asObject();
 
-                foreach ( var entry in qualifiersSection.names() )
+                foreach (var entry in qualifiersSection.names())
                 {
                     var json = qualifiersSection.get(entry).asArray();
-                    foreach ( var value in json )
+                    foreach (var value in json)
                     {
                         var parsedQualifier = new Qualifier(this, value as JsonObject);
-                        qualifiers.Add(parsedQualifier);
+                        _qualifiers.Add(parsedQualifier);
                     }
                 }
             }
@@ -147,12 +150,12 @@ namespace Wikibase
             var qualifiersOrderSection = data.get("qualifiers-order");
             if (qualifiersOrderSection != null && qualifiersOrderSection.isArray())
             {
-                qualifiersOrder.Clear();
+                _qualifiersOrder.Clear();
                 var qualifiersOrderArray = qualifiersOrderSection.asArray();
 
-                foreach ( var property in qualifiersOrderArray.getValues())
+                foreach (var property in qualifiersOrderArray.getValues())
                 {
-                    qualifiersOrder.Add(new EntityId(property.asString()));
+                    _qualifiersOrder.Add(new EntityId(property.asString()));
                 }
             }
 
@@ -161,12 +164,12 @@ namespace Wikibase
 
         internal static Claim NewFromArray(Entity entity, JsonObject data)
         {
-            if ( entity == null )
+            if (entity == null)
                 throw new ArgumentNullException("entity");
 
-            if ( data.get("type") != null )
+            if (data.get("type") != null)
             {
-                switch ( data.get("type").asString() )
+                switch (data.get("type").asString())
                 {
                     case "statement":
                         return new Statement(entity, data);
@@ -183,7 +186,6 @@ namespace Wikibase
         /// <param name="summary">Edit summary.</param>
         internal void Save(String summary)
         {
-
             Dictionary<SnakType, String> snakTypeIdentifiers = new Dictionary<SnakType, String>()
             {
                 {SnakType.None,"novalue"},
@@ -204,7 +206,6 @@ namespace Wikibase
                     this.UpdateDataFromResult(result);
                     break;
             }
-            
         }
 
         /// <summary>
@@ -213,10 +214,10 @@ namespace Wikibase
         /// <param name="result">Json result.</param>
         protected void UpdateDataFromResult(JsonObject result)
         {
-            if ( result == null )
+            if (result == null)
                 throw new ArgumentNullException("result");
 
-            if ( result.get("claim") != null )
+            if (result.get("claim") != null)
             {
                 this.FillData(result.get("claim").asObject());
             }
@@ -243,9 +244,9 @@ namespace Wikibase
 
         private Qualifier AddQualifier(Qualifier q)
         {
-            qualifiers.Add(q);
-            if (!qualifiersOrder.Contains(q.PropertyId))
-                qualifiersOrder.Add(q.PropertyId);
+            _qualifiers.Add(q);
+            if (!_qualifiersOrder.Contains(q.PropertyId))
+                _qualifiersOrder.Add(q.PropertyId);
             Touch();
             return q;
         }
@@ -255,10 +256,10 @@ namespace Wikibase
         /// </summary>
         public void RemoveQualifier(Qualifier q)
         {
-            qualifiers.Remove(q);
-            if (!qualifiers.Where(x => x.PropertyId == q.PropertyId).Any() )
+            _qualifiers.Remove(q);
+            if (!_qualifiers.Where(x => x.PropertyId == q.PropertyId).Any())
             {
-                qualifiersOrder.Remove(q.PropertyId);
+                _qualifiersOrder.Remove(q.PropertyId);
             }
             Touch();
         }
@@ -270,7 +271,7 @@ namespace Wikibase
         internal void Touch()
         {
             if (status == ClaimStatus.Existing)
-                status = ClaimStatus.Modified;           
+                status = ClaimStatus.Modified;
         }
 
         /// <summary>
@@ -291,9 +292,9 @@ namespace Wikibase
         /// <returns>The qualifiers.</returns>
         public Qualifier[] GetQualifiers(String property)
         {
-            var qualifierList = from q in qualifiers
-                            where q.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
-                            select q;
+            var qualifierList = from q in _qualifiers
+                                where q.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                                select q;
 
             return qualifierList.ToArray();
         }
@@ -312,7 +313,7 @@ namespace Wikibase
 
             JsonObject qualifiersSection = new JsonObject();
 
-            foreach (EntityId property in qualifiersOrder)
+            foreach (EntityId property in _qualifiersOrder)
             {
                 var qualifiersForTheProperty = GetQualifiers(property.PrefixedId);
 
@@ -320,7 +321,7 @@ namespace Wikibase
                 {
                     var arrayOfQualifiers = new JsonArray();
 
-                    foreach ( Qualifier q in qualifiersForTheProperty)
+                    foreach (Qualifier q in qualifiersForTheProperty)
                     {
                         arrayOfQualifiers.add(q.Encode());
                     }
@@ -330,7 +331,7 @@ namespace Wikibase
             }
 
             JsonArray qualifiersOrderSection = new JsonArray();
-            foreach (EntityId property in qualifiersOrder)
+            foreach (EntityId property in _qualifiersOrder)
             {
                 qualifiersOrderSection.add(property.PrefixedId.ToUpper());
             }

@@ -35,12 +35,12 @@ namespace Wikibase
         /// <value>Collection of snaks.</value>
         public IEnumerable<Snak> Snaks
         {
-            get { return snaks; }
+            get { return _snaks; }
         }
 
-        private List<Snak> snaks = new List<Snak>();
+        private List<Snak> _snaks = new List<Snak>();
 
-        private List<EntityId> snaksOrder= new List<EntityId>();
+        private List<EntityId> _snaksOrder = new List<EntityId>();
 
         /// <summary>
         /// Creates a new reference by parsing the JSon result.
@@ -60,7 +60,7 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected void FillData(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             if (data.get("snaks") != null)
@@ -70,7 +70,7 @@ namespace Wikibase
                     foreach (JsonValue value in member.value.asArray())
                     {
                         Snak snak = new Snak(value.asObject());
-                        this.snaks.Add(snak);
+                        _snaks.Add(snak);
                     }
                 }
             }
@@ -78,12 +78,12 @@ namespace Wikibase
             var snaksOrderSection = data.get("snaks-order");
             if (snaksOrderSection != null && snaksOrderSection.isArray())
             {
-                snaksOrder.Clear();
+                _snaksOrder.Clear();
                 var snaksOrderArray = snaksOrderSection.asArray();
 
                 foreach (var property in snaksOrderArray.getValues())
                 {
-                    snaksOrder.Add(new EntityId(property.asString()));
+                    _snaksOrder.Add(new EntityId(property.asString()));
                 }
             }
 
@@ -114,11 +114,11 @@ namespace Wikibase
         /// <exception cref="ArgumentException"><paramref name="snaks"/> is empty.</exception>
         internal Reference(Statement statement, IEnumerable<Snak> snaks)
         {
-            if ( snaks == null )
+            if (snaks == null)
                 throw new ArgumentNullException("snaks");
-            if ( statement  == null )
+            if (statement == null)
                 throw new ArgumentNullException("statement");
-            if ( !snaks.Any())
+            if (!snaks.Any())
                 throw new ArgumentException("snaks");
 
             this.Statement = statement;
@@ -136,9 +136,9 @@ namespace Wikibase
         /// <returns>The snaks.</returns>
         public Snak[] GetSnaks(String property)
         {
-            var snakList = from s in snaks
-                                where s.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
-                                select s;
+            var snakList = from s in _snaks
+                           where s.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
+                           select s;
 
             return snakList.ToArray();
         }
@@ -151,13 +151,13 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="snak"/> is <c>null</c>.</exception>
         public void AddSnak(Snak snak)
         {
-            if ( snak == null )
+            if (snak == null)
                 throw new ArgumentNullException("snak");
 
-            snaks.Add(snak);
+            _snaks.Add(snak);
 
-            if (!snaksOrder.Contains(snak.PropertyId))
-                snaksOrder.Add(snak.PropertyId);
+            if (!_snaksOrder.Contains(snak.PropertyId))
+                _snaksOrder.Add(snak.PropertyId);
             Touch();
         }
 
@@ -176,13 +176,13 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="snak"/> is <c>null</c>.</exception>
         public void RemoveSnak(Snak snak)
         {
-            if ( snak == null )
+            if (snak == null)
                 throw new ArgumentNullException("snak");
 
-            snaks.Remove(snak);
-            if (!snaks.Where(x => x.PropertyId == snak.PropertyId).Any())
+            _snaks.Remove(snak);
+            if (!_snaks.Where(x => x.PropertyId == snak.PropertyId).Any())
             {
-                snaksOrder.Remove(snak.PropertyId);
+                _snaksOrder.Remove(snak.PropertyId);
             }
             Touch();
         }
@@ -193,7 +193,7 @@ namespace Wikibase
         /// <param name="result">Json result.</param>
         protected void UpdateDataFromResult(JsonObject result)
         {
-            if ( result == null )
+            if (result == null)
                 throw new ArgumentNullException("result");
 
             if (result.get("reference") != null)
@@ -210,12 +210,11 @@ namespace Wikibase
         /// <returns>a JsonObject with the reference encoded.</returns>
         internal virtual JsonObject Encode()
         {
-
             JsonObject encoded = new JsonObject();
 
             var snaksSection = new JsonObject();
 
-            foreach (EntityId property in snaksOrder)
+            foreach (EntityId property in _snaksOrder)
             {
                 var snaksForTheProperty = GetSnaks(property.PrefixedId);
 
@@ -230,11 +229,10 @@ namespace Wikibase
 
                     snaksSection.add(property.PrefixedId.ToUpper(), arrayOfSnaks);
                 }
-
             }
 
             JsonArray snaksOrderSection = new JsonArray();
-            foreach (EntityId property in snaksOrder)
+            foreach (EntityId property in _snaksOrder)
             {
                 snaksOrderSection.add(property.PrefixedId.ToUpper());
             }
@@ -256,7 +254,5 @@ namespace Wikibase
         {
             return Encode().ToString();
         }
-
-
     }
 }

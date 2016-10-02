@@ -103,10 +103,10 @@ namespace Wikibase
         /// <exception cref="ArgumentException"><paramref name="propertyId"/> has <see cref="EntityId.Type"/> not set as <see cref="EntityType.Property"/>.</exception>
         public Snak(SnakType type, EntityId propertyId, DataValue dataValue)
         {
-            if ( propertyId == null )
+            if (propertyId == null)
                 throw new ArgumentNullException("propertyId");
 
-            if ( propertyId.Type != EntityType.Property )
+            if (propertyId.Type != EntityType.Property)
             {
                 throw new ArgumentException("propertyId must be a valid property id", "propertyId");
             }
@@ -121,7 +121,7 @@ namespace Wikibase
         /// <param name="data">Json object to parse.</param>
         internal Snak(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
             FillFromArray(data);
         }
@@ -140,15 +140,15 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected virtual void FillFromArray(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
-            if ( data.get(SnakTypeJsonName) == null || data.get(PropertyJsonName) == null )
+            if (data.get(SnakTypeJsonName) == null || data.get(PropertyJsonName) == null)
             {
                 throw new ArgumentException("Invalid Snak serialization", "data");
             }
             var type = data.get(SnakTypeJsonName).asString();
-            if ( _snakTypeIdentifiers.Any(x => x.Value == type) )
+            if (_snakTypeIdentifiers.Any(x => x.Value == type))
             {
                 this.Type = _snakTypeIdentifiers.First(x => x.Value == type).Key;
             }
@@ -160,7 +160,7 @@ namespace Wikibase
             this.PropertyId = new EntityId(data.get(PropertyJsonName).asString());
             var readDataValue = data.get(DataValueJsonName);
             // if type!=value, then there is no datavalue in the read data
-            if ( (readDataValue != null) && (readDataValue.isObject()) )
+            if ((readDataValue != null) && (readDataValue.isObject()))
             {
                 this.DataValue = DataValueFactory.CreateFromJsonObject(data.get(DataValueJsonName).asObject());
             }
@@ -175,7 +175,7 @@ namespace Wikibase
             JsonObject data = new JsonObject()
                 .add(SnakTypeJsonName, _snakTypeIdentifiers[this.Type])
                 .add(PropertyJsonName, this.PropertyId.PrefixedId);
-            if ( this.DataValue != null )
+            if (this.DataValue != null)
             {
                 data.add(DataValueJsonName, this.DataValue.fullEncode());
             }
@@ -190,6 +190,5 @@ namespace Wikibase
         {
             return Encode().ToString();
         }
-
     }
 }

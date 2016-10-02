@@ -10,7 +10,7 @@ namespace Wikibase
     /// </summary>
     public class Item : Entity
     {
-        private Dictionary<String, String> sitelinks = new Dictionary<String, String>();
+        private Dictionary<String, String> _sitelinks = new Dictionary<String, String>();
 
         /// <summary>
         /// List of site codes whose sitelinks have changed
@@ -21,7 +21,7 @@ namespace Wikibase
         #region Json names
 
         /// <summary>
-        /// The name of the <see cref="sitelinks"/> property in the serialized json object.
+        /// The name of the <see cref="_sitelinks"/> property in the serialized json object.
         /// </summary>
         private const String SiteLinksJsonName = "sitelinks";
 
@@ -68,20 +68,20 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected override void FillData(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             base.FillData(data);
-            if ( data.get(SiteLinksJsonName) != null )
+            if (data.get(SiteLinksJsonName) != null)
             {
-                this.sitelinks.Clear();
+                _sitelinks.Clear();
                 var jasonSiteLinks = data.get(SiteLinksJsonName);
-                if ( jasonSiteLinks != null && jasonSiteLinks.isObject() )
+                if (jasonSiteLinks != null && jasonSiteLinks.isObject())
                 {
-                    foreach ( JsonObject.Member member in jasonSiteLinks.asObject() )
+                    foreach (JsonObject.Member member in jasonSiteLinks.asObject())
                     {
                         JsonObject obj = member.value.asObject();
-                        this.sitelinks.Add(obj.get(SiteLinksSiteJsonName).asString(), obj.get(SiteLinksTitleJsonName).asString());
+                        _sitelinks.Add(obj.get(SiteLinksSiteJsonName).asString(), obj.get(SiteLinksTitleJsonName).asString());
                         // ToDo: parse badges
                     }
                 }
@@ -96,7 +96,7 @@ namespace Wikibase
         /// <see cref="SetSitelink"/> and <see cref="RemoveSitelink"/>.</remarks>
         public Dictionary<String, String> GetSitelinks()
         {
-            return new Dictionary<String, String>(sitelinks);
+            return new Dictionary<String, String>(_sitelinks);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Wikibase
         /// <returns></returns>
         public String GetSitelink(String site)
         {
-            return sitelinks[site];
+            return _sitelinks[site];
         }
 
         /// <summary>
@@ -116,13 +116,12 @@ namespace Wikibase
         /// <param name="title">The sitelink.</param>
         public void SetSitelink(String site, String title)
         {
-
             if (String.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("empty title");
             if (String.IsNullOrWhiteSpace(site))
                 throw new ArgumentException("empty site");
 
-            this.sitelinks[site] = title;
+            _sitelinks[site] = title;
             this.dirtySitelinks.Add(site);
         }
 
@@ -133,7 +132,7 @@ namespace Wikibase
         /// <returns><c>true</c> if the sitelink was removed successfully, <c>false</c> otherwise.</returns>
         public Boolean RemoveSitelink(String site)
         {
-            if ( sitelinks.Remove(site) )
+            if (_sitelinks.Remove(site))
             {
                 this.dirtyDescriptions.Add(site);
                 return true;
@@ -156,8 +155,6 @@ namespace Wikibase
         /// <param name="summary">The edit summary.</param>
         public override void Save(string summary)
         {
-
-
             if (dirtySitelinks.Count > 0)
             {
                 if (this.changes.get(SiteLinksJsonName) == null)
@@ -170,9 +167,9 @@ namespace Wikibase
                     string sitelinkValue = "";
 
                     // If there is label the text is the label itself, if not is a removed label (i.e. empty)
-                    if (sitelinks.ContainsKey(site))
+                    if (_sitelinks.ContainsKey(site))
                     {
-                        sitelinkValue = sitelinks[site];
+                        sitelinkValue = _sitelinks[site];
                     }
 
                     this.changes.get(SiteLinksJsonName).asObject().set(

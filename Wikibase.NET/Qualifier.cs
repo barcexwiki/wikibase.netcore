@@ -61,7 +61,7 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         internal Qualifier(Claim statement, JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             this.Claim = statement;
@@ -75,11 +75,11 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
         protected override void FillFromArray(JsonObject data)
         {
-            if ( data == null )
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             base.FillFromArray(data);
-            if ( data.get("hash") != null )
+            if (data.get("hash") != null)
             {
                 this.Hash = data.get("hash").asString();
             }
@@ -91,22 +91,22 @@ namespace Wikibase
         /// <param name="result">Json result.</param>
         protected void UpdateDataFromResult(JsonObject result)
         {
-            if ( result == null )
+            if (result == null)
                 throw new ArgumentNullException("result");
 
             // result is a complete claim
-            if ( result.get("claim") != null )
+            if (result.get("claim") != null)
             {
                 var claim = result.get("claim").asObject();
-                if ( claim.get("qualifiers") != null )
+                if (claim.get("qualifiers") != null)
                 {
                     var qualifiers = claim.get("qualifiers").asObject();
-                    foreach ( var entry in qualifiers.names() )
+                    foreach (var entry in qualifiers.names())
                     {
-                        if ( new EntityId(entry).Equals(PropertyId) )
+                        if (new EntityId(entry).Equals(PropertyId))
                         {
                             var json = qualifiers.get(entry).asArray();
-                            foreach ( var value in json )
+                            foreach (var value in json)
                             {
                                 FillFromArray(value as JsonObject);
                             }

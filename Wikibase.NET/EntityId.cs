@@ -37,7 +37,7 @@ namespace Wikibase
         /// <summary>
         /// The allowed prefixes for entity ids
         /// </summary>
-        private static readonly String[] prefixes = new String[] { "q", "p" };
+        private static readonly String[] s_prefixes = new String[] { "q", "p" };
 
         /// <summary>
         /// Gets the entity type.
@@ -75,12 +75,12 @@ namespace Wikibase
             private set;
         }
 
-        private static Regex prefixedIdRegex = new Regex(@"^(\w)(\d+)(#.*|)$");
+        private static Regex s_prefixedIdRegex = new Regex(@"^(\w)(\d+)(#.*|)$");
 
         private void SetPrefix(String prefix)
         {
             var prefixToFind = CultureInfo.InvariantCulture.TextInfo.ToLower(prefix);
-            if ( !_entityTypePrefixes.Values.Contains(prefixToFind) )
+            if (!_entityTypePrefixes.Values.Contains(prefixToFind))
             {
                 throw new ArgumentException(String.Format("\"{0}\" is no recognized prefix", prefix));
             }
@@ -105,16 +105,13 @@ namespace Wikibase
         public EntityId(String prefixedId)
         {
             Boolean success = false;
-            if ( !String.IsNullOrWhiteSpace(prefixedId) )
+            if (!String.IsNullOrWhiteSpace(prefixedId))
             {
-                Match match = prefixedIdRegex.Match(CultureInfo.InvariantCulture.TextInfo.ToLower(prefixedId));
+                Match match = s_prefixedIdRegex.Match(CultureInfo.InvariantCulture.TextInfo.ToLower(prefixedId));
 
-                if ( match.Success )
+                if (match.Success)
                 {
-                    if ( Array.Exists(prefixes, delegate(String s)
-                {
-                    return s == match.Groups[1].Value;
-                }) )
+                    if (Array.Exists(s_prefixes, delegate (String s)  { return s == match.Groups[1].Value; }))
                     {
                         this.NumericId = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
                         this.Prefix = match.Groups[1].Value;
@@ -122,7 +119,7 @@ namespace Wikibase
                     }
                 }
             }
-            if ( !success )
+            if (!success)
             {
                 throw new ArgumentException(String.Format("\"{0}\" is not a parseable prefixed id", prefixedId));
             }
@@ -148,15 +145,15 @@ namespace Wikibase
         /// <returns><c>true</c> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <c>false</c>.</returns>
         public override Boolean Equals(Object other)
         {
-            if ( this == other )
+            if (this == other)
             {
                 return true;
             }
-            if ( other == null )
+            if (other == null)
             {
                 return false;
             }
-            if ( this.GetType() != other.GetType() )
+            if (this.GetType() != other.GetType())
             {
                 return false;
             }

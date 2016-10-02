@@ -17,7 +17,7 @@ namespace Wikibase.DataValues
 
         internal static DataValue CreateFromJsonValue(String type, JsonValue value)
         {
-            switch ( type )
+            switch (type)
             {
                 case EntityIdValue.TypeJsonName:
                     return new EntityIdValue(value);

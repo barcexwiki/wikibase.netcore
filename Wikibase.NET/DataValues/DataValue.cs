@@ -36,7 +36,7 @@ namespace Wikibase.DataValues
 
         private static String md5(String text)
         {
-            if ( (text == null) || (text.Length == 0) )
+            if ((text == null) || (text.Length == 0))
             {
                 return String.Empty;
             }
@@ -44,12 +44,12 @@ namespace Wikibase.DataValues
             MD5 md5provider = null;
             try
             {
-                md5provider = MD5.Create(); 
+                md5provider = MD5.Create();
                 result = md5provider.ComputeHash(Encoding.GetEncoding(0).GetBytes(text));
             }
             finally
             {
-                if ( md5provider != null )
+                if (md5provider != null)
                     md5provider.Dispose();
             }
             return System.BitConverter.ToString(result);
@@ -63,15 +63,15 @@ namespace Wikibase.DataValues
         /// <returns><c>true</c> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <c>false</c>.</returns>
         public override Boolean Equals(Object other)
         {
-            if ( this == other )
+            if (this == other)
             {
                 return true;
             }
-            if ( other == null )
+            if (other == null)
             {
                 return false;
             }
-            if ( this.GetType() != other.GetType() )
+            if (this.GetType() != other.GetType())
             {
                 return false;
             }

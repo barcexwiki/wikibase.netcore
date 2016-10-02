@@ -10,7 +10,7 @@ namespace Wikibase
     /// </summary>
     public class EntityProvider
     {
-        private WikibaseApi api;
+        private WikibaseApi _api;
 
         /// <summary>
         /// Creates a new <see cref="EntityProvider"/>.
@@ -18,7 +18,7 @@ namespace Wikibase
         /// <param name="api">The api.</param>
         public EntityProvider(WikibaseApi api)
         {
-            this.api = api;
+            _api = api;
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="ids"/> is <c>null</c>.</exception>
         public Entity[] getEntitiesFromIds(EntityId[] ids)
         {
-            if ( ids == null )
+            if (ids == null)
                 throw new ArgumentNullException("ids");
 
             return this.getEntitiesFromIds(ids, null);
@@ -44,15 +44,15 @@ namespace Wikibase
         /// <exception cref="ArgumentNullException"><paramref name="ids"/> is <c>null</c>.</exception>
         public Entity[] getEntitiesFromIds(EntityId[] ids, String[] languages)
         {
-            if ( ids == null )
+            if (ids == null)
                 throw new ArgumentNullException("ids");
 
             String[] prefixedIds = new String[ids.Length];
-            for ( int i = 0 ; i < ids.Length ; i++ )
+            for (int i = 0; i < ids.Length; i++)
             {
                 prefixedIds[i] = ids[i].PrefixedId;
             }
-            return this.api.getEntitiesFromIds(prefixedIds, languages);
+            return _api.getEntitiesFromIds(prefixedIds, languages);
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Wikibase
         public Entity getEntityFromId(EntityId id, String[] languages)
         {
             Entity[] entities = this.getEntitiesFromIds(new EntityId[] { id }, languages);
-            foreach ( Entity entity in entities )
+            foreach (Entity entity in entities)
             {
                 return entity;
             }
@@ -101,7 +101,7 @@ namespace Wikibase
         /// <returns>The entities</returns>
         public Entity[] getEntitiesFromSitelinks(String[] sites, String[] titles, String[] languages)
         {
-            return this.api.getEntitesFromSitelinks(sites, titles, languages);
+            return _api.getEntitesFromSitelinks(sites, titles, languages);
         }
 
         /// <summary>
