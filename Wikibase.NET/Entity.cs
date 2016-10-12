@@ -576,11 +576,11 @@ namespace Wikibase
                 JsonObject result;
                 if (this.Id == null)
                 {
-                    result = this.Api.createEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
+                    result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
                 }
                 else
                 {
-                    result = this.Api.editEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
+                    result = this.Api.EditEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
                 }
                 if (result.get("entity") != null)
                 {

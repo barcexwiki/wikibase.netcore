@@ -40,7 +40,7 @@ namespace Wikibase
         /// <param name="ids">The ids</param>
         /// <param name="languages">The languages</param>
         /// <returns>The list of entities</returns>
-        internal Entity[] getEntitiesFromIds(String[] ids, String[] languages)
+        internal Entity[] GetEntitiesFromIds(String[] ids, String[] languages)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -51,8 +51,8 @@ namespace Wikibase
             {
                 parameters["languages"] = String.Join("|", languages);
             }
-            JsonObject result = this.get(parameters);
-            return parseGetEntitiesApiResponse(result);
+            JsonObject result = this.Get(parameters);
+            return ParseGetEntitiesApiResponse(result);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Wikibase
         /// <param name="titles">The titles</param>
         /// <param name="languages">The languages</param>
         /// <returns>The list of entities</returns>
-        internal Entity[] getEntitesFromSitelinks(String[] sites, String[] titles, String[] languages)
+        internal Entity[] GetEntitesFromSitelinks(String[] sites, String[] titles, String[] languages)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -74,8 +74,8 @@ namespace Wikibase
             {
                 parameters["languages"] = String.Join("|", languages);
             }
-            JsonObject result = this.get(parameters);
-            return parseGetEntitiesApiResponse(result);
+            JsonObject result = this.Get(parameters);
+            return ParseGetEntitiesApiResponse(result);
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace Wikibase
         /// <param name="result">The result of the api request</param>
         /// <returns>The list of entities</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is <c>null</c>.</exception>
-        protected Entity[] parseGetEntitiesApiResponse(JsonObject result)
+        protected Entity[] ParseGetEntitiesApiResponse(JsonObject result)
         {
             if (result == null)
                 throw new ArgumentNullException("result");
@@ -111,7 +111,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject editEntity(String id, JsonObject data, Int32 baseRevisionId, String summary)
+        internal JsonObject EditEntity(String id, JsonObject data, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -122,7 +122,7 @@ namespace Wikibase
                 { "data", data.ToString() },
                 { "id", id }
             };
-            return this.editAction(parameters, postFields, baseRevisionId, summary);
+            return this.EditAction(parameters, postFields, baseRevisionId, summary);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject createEntity(String type, JsonObject data, Int32 baseRevisionId, String summary)
+        internal JsonObject CreateEntity(String type, JsonObject data, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -144,7 +144,7 @@ namespace Wikibase
                 { "data", data.ToString() },
                 { "new", type }
             };
-            return this.editAction(parameters, postFields, baseRevisionId, summary);
+            return this.EditAction(parameters, postFields, baseRevisionId, summary);
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject createClaim(String entity, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
+        internal JsonObject CreateClaim(String entity, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -170,7 +170,7 @@ namespace Wikibase
             {
                 parameters["value"] = value.Encode().ToString();
             }
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject setClaim(String claim, Int32 baseRevisionId, String summary)
+        internal JsonObject SetClaim(String claim, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -190,7 +190,7 @@ namespace Wikibase
             {
                 { "claim", claim }
             };
-            return this.editAction(parameters, postFields, baseRevisionId, summary);
+            return this.EditAction(parameters, postFields, baseRevisionId, summary);
         }
 
 
@@ -203,7 +203,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject setClaimValue(String claim, String snakType, DataValue value, Int32 baseRevisionId, String summary)
+        internal JsonObject SetClaimValue(String claim, String snakType, DataValue value, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -215,7 +215,7 @@ namespace Wikibase
             {
                 parameters["value"] = value.Encode().ToString();
             }
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -225,14 +225,14 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject removeClaims(String[] claims, Int32 baseRevisionId, String summary)
+        internal JsonObject RemoveClaims(String[] claims, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
                 { "action", "wbremoveclaims" },
                 { "claim", string.Join("|", claims) }
             };
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject setReference(String statement, JsonObject snaks, String reference, Int32 baseRevisionId, String summary)
+        internal JsonObject SetReference(String statement, JsonObject snaks, String reference, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -256,7 +256,7 @@ namespace Wikibase
             {
                 parameters["reference"] = reference;
             }
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject removeReferences(String statement, String[] references, Int32 baseRevisionId, String summary)
+        internal JsonObject RemoveReferences(String statement, String[] references, Int32 baseRevisionId, String summary)
         {
             Dictionary<string, string> parameters = new Dictionary<String, String>()
             {
@@ -275,7 +275,7 @@ namespace Wikibase
                 { "statement", statement },
                 { "references", string.Join("|", references) }
             };
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject setQualifier(String statement, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
+        internal JsonObject SetQualifier(String statement, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
         {
             Dictionary<String, String> parameters = new Dictionary<String, String>()
             {
@@ -302,7 +302,7 @@ namespace Wikibase
                 parameters["value"] = value.Encode().ToString();
             }
 
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject removeQualifier(String statement, String[] qualifiers, Int32 baseRevisionId, String summary)
+        internal JsonObject RemoveQualifier(String statement, String[] qualifiers, Int32 baseRevisionId, String summary)
         {
             Dictionary<string, string> parameters = new Dictionary<String, String>()
             {
@@ -321,7 +321,7 @@ namespace Wikibase
                 { "statement", statement },
                 { "qualifiers", string.Join("|", qualifiers) }
             };
-            return this.editAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -333,14 +333,14 @@ namespace Wikibase
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> or <paramref name="postFields"/> is <c>null</c>.</exception>
-        private JsonObject editAction(Dictionary<String, String> parameters, Dictionary<String, String> postFields, Int32 baseRevisionId, String summary)
+        private JsonObject EditAction(Dictionary<String, String> parameters, Dictionary<String, String> postFields, Int32 baseRevisionId, String summary)
         {
             if (parameters == null)
                 throw new ArgumentNullException("parameters");
             if (postFields == null)
                 throw new ArgumentNullException("postFields");
 
-            postFields["token"] = this.getEditToken();
+            postFields["token"] = this.GetEditToken();
             if (baseRevisionId != 0)
             {
                 parameters["baserevid"] = baseRevisionId.ToString(CultureInfo.InvariantCulture);
@@ -349,20 +349,20 @@ namespace Wikibase
             {
                 parameters["summary"] = summary;
             }
-            if (this.botEdits)
+            if (this.BotEdits)
             {
                 parameters["bot"] = true.ToString();
             }
             // limit number of edits
             Int32 time = Environment.TickCount;
-            if (this.lastEditTimestamp > 0 && (time - this.lastEditTimestamp) < this.editLaps)
+            if (this.LastEditTimestamp > 0 && (time - this.LastEditTimestamp) < this.EditLaps)
             {
-                Int32 wait = this.lastEditTimestamp + this.editLaps - time;
+                Int32 wait = this.LastEditTimestamp + this.EditLaps - time;
                 Console.WriteLine("Wait for {0} seconds...", wait / 1000);
                 Task.Delay(wait).Wait();
             }
-            this.lastEditTimestamp = Environment.TickCount;
-            return this.post(parameters, postFields);
+            this.LastEditTimestamp = Environment.TickCount;
+            return this.Post(parameters, postFields);
         }
     }
 }

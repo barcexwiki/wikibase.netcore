@@ -13,7 +13,7 @@ namespace Wikibase
         /// <summary>
         /// The data type
         /// </summary>
-        public string datatype
+        public string DataType
         {
             get;
             private set;
@@ -51,7 +51,7 @@ namespace Wikibase
             base.FillData(data);
             if (data.get("datatype") != null)
             {
-                this.datatype = data.get("datatype").asString();
+                this.DataType = data.get("datatype").asString();
             }
         }
 

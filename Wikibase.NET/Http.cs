@@ -38,9 +38,9 @@ namespace Wikibase
         /// </summary>
         /// <param name="url">The url</param>
         /// <returns>The response</returns>
-        public String get(String url)
+        public String Get(String url)
         {
-            return this.post(url, null);
+            return this.Post(url, null);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Wikibase
         /// <param name="url">The url.</param>
         /// <param name="postFields">The post fields.</param>
         /// <returns>The response.</returns>
-        public String post(String url, Dictionary<String, String> postFields)
+        public String Post(String url, Dictionary<String, String> postFields)
         {
             using (var _handler = new HttpClientHandler() { CookieContainer = _cookies })
             using (HttpClient _client = new HttpClient(_handler))
@@ -59,7 +59,7 @@ namespace Wikibase
                 HttpResponseMessage response;
                 if (postFields != null)
                 {
-                    HttpContent _body = new StringContent(this.buildQuery(postFields));
+                    HttpContent _body = new StringContent(this.BuildQuery(postFields));
                     _body.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     response = _client.PostAsync(url, _body).Result;
                 }
@@ -78,7 +78,7 @@ namespace Wikibase
         /// <param name="fields">The fields.</param>
         /// <returns>The query string.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fields"/> is <c>null</c>.</exception>
-        public String buildQuery(Dictionary<String, String> fields)
+        public String BuildQuery(Dictionary<String, String> fields)
         {
             if (fields == null)
                 throw new ArgumentNullException("fields");
