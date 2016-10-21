@@ -15,7 +15,7 @@ namespace Wikibase
         private const String ApiVersion = "0.1";
 
         private Http _http;
-        private String _wiki;
+        private String _apiUrl;
         private String _editToken;
 
         /// <summary>
@@ -61,27 +61,27 @@ namespace Wikibase
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="wiki">The base url of the wiki like "http://www.wikidata.org".</param>
-        public Api(String wiki)
-            : this(wiki, ApiName)
+        /// <param name="apiUrl">The URL of the wiki API like "http://www.wikidata.org/w/api.php".</param>
+        public Api(String apiUrl)
+            : this(apiUrl, ApiName)
         {
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="wiki">The base url of the wiki like "https://www.wikidata.org".</param>
+        /// <param name="apiUrl">The URL of the API access point "https://www.wikidata.org/w/api.php".</param>
         /// <param name="userAgent">The user agent.</param>
         /// <exception cref="ArgumentNullException"><paramref name="userAgent"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="wiki"/> is empty or <c>null</c>.</exception>
-        public Api(String wiki, String userAgent)
+        /// <exception cref="ArgumentException"><paramref name="apiUrl"/> is empty or <c>null</c>.</exception>
+        public Api(String apiUrl, String userAgent)
         {
-            if (String.IsNullOrWhiteSpace(wiki))
-                throw new ArgumentException("Invalid base url", "wiki");
+            if (String.IsNullOrWhiteSpace(apiUrl))
+                throw new ArgumentException("Invalid API URL", "apiUrl");
             if (userAgent == null)
                 throw new ArgumentNullException("userAgent");
 
-            _wiki = wiki;
+            _apiUrl = apiUrl;
             _http = new Http(String.Format(CultureInfo.InvariantCulture, "{0} {1}/{2}", userAgent.Trim(), ApiName, ApiVersion));
         }
 
@@ -97,7 +97,7 @@ namespace Wikibase
                 throw new ArgumentNullException("parameters");
 
             parameters["format"] = "json";
-            String url = _wiki + "/w/api.php?" + _http.BuildQuery(parameters);
+            String url = _apiUrl + "?" + _http.BuildQuery(parameters);
             String response = _http.Get(url);
             JsonValue result = JsonValue.readFrom(response);
             if (!result.isObject())
@@ -127,7 +127,7 @@ namespace Wikibase
                 throw new ArgumentNullException("postFields");
 
             parameters["format"] = "json";
-            String url = _wiki + "/w/api.php?" + _http.BuildQuery(parameters);
+            String url = _apiUrl + "?" + _http.BuildQuery(parameters);
             String response = _http.Post(url, postFields);
             JsonObject result = JsonObject.readFrom(response);
             if (result.get("error") != null)
