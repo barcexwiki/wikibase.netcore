@@ -18,19 +18,19 @@ namespace Wikibase
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="wiki">The base url of the wiki like "https://www.wikidata.org"</param>
-        public WikibaseApi(String wiki)
-            : base(wiki)
+        /// <param name="apiUrl">The API URL of the wiki like "https://www.wikidata.org/w/api.php"</param>
+        public WikibaseApi(String apiUrl)
+            : base(apiUrl)
         {
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="wiki">The base url of the wiki like "https://www.wikidata.org"</param>
+        /// <param name="apiUrl">The API URL of the wiki like "https://www.wikidata.org/w/api.php"</param>
         /// <param name="userAgent">The user agent</param>
-        public WikibaseApi(String wiki, String userAgent)
-            : base(wiki, userAgent)
+        public WikibaseApi(String apiUrl, String userAgent)
+            : base(apiUrl, userAgent)
         {
         }
 
