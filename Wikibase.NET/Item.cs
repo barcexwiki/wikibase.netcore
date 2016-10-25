@@ -121,8 +121,14 @@ namespace Wikibase
             if (String.IsNullOrWhiteSpace(site))
                 throw new ArgumentException("empty site");
 
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove alias from an entity with status " + Status);
+            }
+
             _sitelinks[site] = title;
             this.dirtySitelinks.Add(site);
+            Touch();
         }
 
         /// <summary>
@@ -132,9 +138,16 @@ namespace Wikibase
         /// <returns><c>true</c> if the sitelink was removed successfully, <c>false</c> otherwise.</returns>
         public Boolean RemoveSitelink(String site)
         {
+
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove a site link from an entity with status " + Status);
+            }
+
             if (_sitelinks.Remove(site))
             {
                 this.dirtyDescriptions.Add(site);
+                Touch();
                 return true;
             }
             return false;
@@ -155,36 +168,50 @@ namespace Wikibase
         /// <param name="summary">The edit summary.</param>
         public override void Save(string summary)
         {
-            if (dirtySitelinks.Count > 0)
+            EntityStatus currentStatus = Status;
+            switch (currentStatus)
             {
-                if (this.changes.get(SiteLinksJsonName) == null)
-                {
-                    this.changes.set(SiteLinksJsonName, new JsonObject());
-                }
-
-                foreach (string site in dirtySitelinks)
-                {
-                    string sitelinkValue = "";
-
-                    // If there is label the text is the label itself, if not is a removed label (i.e. empty)
-                    if (_sitelinks.ContainsKey(site))
+                case EntityStatus.Changed:
+                case EntityStatus.New:
+                    if (dirtySitelinks.Count > 0)
                     {
-                        sitelinkValue = _sitelinks[site];
-                    }
+                        if (this.changes.get(SiteLinksJsonName) == null)
+                        {
+                            this.changes.set(SiteLinksJsonName, new JsonObject());
+                        }
 
-                    this.changes.get(SiteLinksJsonName).asObject().set(
-                        site,
-                        new JsonObject()
-                            .add(SiteLinksSiteJsonName, site)
-                            .add(SiteLinksTitleJsonName, sitelinkValue)
-                    );
-                }
+                        foreach (string site in dirtySitelinks)
+                        {
+                            string sitelinkValue = "";
+
+                            // If there is label the text is the label itself, if not is a removed label (i.e. empty)
+                            if (_sitelinks.ContainsKey(site))
+                            {
+                                sitelinkValue = _sitelinks[site];
+                            }
+
+                            this.changes.get(SiteLinksJsonName).asObject().set(
+                                site,
+                                new JsonObject()
+                                    .add(SiteLinksSiteJsonName, site)
+                                    .add(SiteLinksTitleJsonName, sitelinkValue)
+                            );
+                        }
+                    }
+                    break;
             }
 
             base.Save(summary);
 
             // Clears the dirty sets
             dirtySitelinks.Clear();
+        }
+
+        protected override void Clear()
+        {
+            _sitelinks.Clear();
+            dirtySitelinks.Clear();
+            base.Clear();
         }
     }
 }

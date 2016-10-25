@@ -18,7 +18,7 @@ namespace Wikibase
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="apiUrl">The API URL of the wiki like "https://www.wikidata.org/w/api.php"</param>
+        /// <param name="apiUrl">The base url of the wiki like "https://www.wikidata.org"</param>
         public WikibaseApi(String apiUrl)
             : base(apiUrl)
         {
@@ -123,6 +123,26 @@ namespace Wikibase
                 { "id", id }
             };
             return this.EditAction(parameters, postFields, baseRevisionId, summary);
+        }
+
+        /// <summary>
+        /// Delete an entity.
+        /// </summary>
+        /// <param name="title">The id of the entity</param>
+        /// <param name="summary">The summary for the change</param>
+        /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
+        /// <returns>The returned json object from the server.</returns>
+        internal void DeleteEntity(String title, Int32 baseRevisionId, String summary)
+        {
+            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            {
+                { "action", "delete" }
+            };
+            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            {
+                { "title", title }
+            };
+            this.EditAction(parameters, postFields, baseRevisionId, summary);
         }
 
         /// <summary>

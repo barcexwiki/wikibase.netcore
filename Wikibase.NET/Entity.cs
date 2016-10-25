@@ -17,6 +17,14 @@ namespace Wikibase
             New,
             Removed
         }
+        public enum EntityStatus
+        {
+            New,
+            Loaded,
+            Changed,
+            ToBeDeleted,
+            Deleted
+        }
 
         private class EntityAlias
         {
@@ -32,6 +40,15 @@ namespace Wikibase
             }
         }
 
+
+        /// <summary>
+        /// The entity object Status (New, Loaded, Changed, Deleted)
+        /// </summary>
+        public EntityStatus Status
+        {
+            get;
+            protected set;
+        }
 
         /// <summary>
         /// The entity id
@@ -101,8 +118,10 @@ namespace Wikibase
         /// </summary>
         /// <param name="api">The api.</param>
         public Entity(WikibaseApi api)
-            : this(api, new JsonObject())
         {
+            this.Api = api;
+            this.FillData(new JsonObject());
+            Status = EntityStatus.New;
         }
 
         /// <summary>
@@ -114,6 +133,7 @@ namespace Wikibase
         {
             this.Api = api;
             this.FillData(data);
+            Status = EntityStatus.Loaded;
         }
 
         /// <summary>
@@ -226,6 +246,7 @@ namespace Wikibase
             return _labels.ContainsKey(lang) ? _labels[lang] : null;
         }
 
+
         /// <summary>
         /// Set the label for the given language.
         /// </summary>
@@ -239,10 +260,16 @@ namespace Wikibase
             if (String.IsNullOrWhiteSpace(lang))
                 throw new ArgumentException("empty language");
 
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot set a label for an entity with status " + Status);
+            }
+
             if (GetLabel(lang) != value)
             {
                 _labels[lang] = value;
                 this.dirtyLabels.Add(lang);
+                Touch();
             }
         }
 
@@ -256,9 +283,16 @@ namespace Wikibase
         {
             if (String.IsNullOrWhiteSpace(lang))
                 throw new ArgumentException("empty language");
+
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove a label from an entity with status " + Status);
+            }
+
             if (_labels.Remove(lang))
             {
                 this.dirtyLabels.Add(lang);
+                Touch();
                 return true;
             }
             return false;
@@ -300,10 +334,16 @@ namespace Wikibase
             if (String.IsNullOrWhiteSpace(lang))
                 throw new ArgumentException("empty language");
 
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot set a description for an entity with status " + Status);
+            }
+
             if (GetDescription(lang) != value)
             {
                 _descriptions[lang] = value;
                 this.dirtyDescriptions.Add(lang);
+                Touch();
             }
         }
 
@@ -318,9 +358,15 @@ namespace Wikibase
             if (String.IsNullOrWhiteSpace(lang))
                 throw new ArgumentException("empty language");
 
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove a description from an entity with status " + Status);
+            }
+
             if (_descriptions.Remove(lang))
             {
                 this.dirtyDescriptions.Add(lang);
+                Touch();
                 return true;
             }
             return false;
@@ -388,6 +434,7 @@ namespace Wikibase
             else
             {
                 _aliases.Add(new EntityAlias(lang, value, AliasStatus.New));
+                Touch();
             }
         }
 
@@ -406,6 +453,10 @@ namespace Wikibase
             if (String.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("empty value", "value");
 
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove an alias from an entity with status " + Status);
+            }
 
             IEnumerable<EntityAlias> filtered = from a in _aliases
                                                 where a.Language == lang && a.Label == value
@@ -424,6 +475,7 @@ namespace Wikibase
                         _aliases.Remove(alias);
                         break;
                 }
+                Touch();
             }
         }
 
@@ -447,6 +499,11 @@ namespace Wikibase
         /// <returns>The claims.</returns>
         public Claim[] GetClaims(String property)
         {
+            if (property == null)
+            {
+                throw new ArgumentNullException(nameof(property));
+            }
+
             var claimList = from c in Claims
                             where c.MainSnak.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
                             select c;
@@ -461,6 +518,16 @@ namespace Wikibase
         /// <returns><c>true</c> if the claim was removed successfully, <c>false</c> otherwise.</returns>
         public bool RemoveClaim(Claim claim)
         {
+            if (claim == null)
+            {
+                throw new ArgumentNullException(nameof(claim));
+            }
+
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot remove a claim from an entity with status " + Status);
+            }
+
             if (_claims.Contains(claim))
             {
                 if (claim.status == Claim.ClaimStatus.New)
@@ -468,6 +535,7 @@ namespace Wikibase
                     _claims.Remove(claim);
                 }
                 claim.Delete();
+                Touch();
                 return true;
             }
             else
@@ -476,118 +544,155 @@ namespace Wikibase
             }
         }
 
+        public virtual void Delete()
+        {            
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot delete an entity with status "+Status);
+            }
+
+            if (Status == EntityStatus.New)
+            {
+                Status = EntityStatus.Deleted;
+            } else
+            {
+                Status = EntityStatus.ToBeDeleted;
+            }
+
+            Clear();
+
+        }
+
         /// <summary>
         /// Save all changes.
         /// </summary>
         /// <param name="summary">The edit summary.</param>
         public virtual void Save(String summary)
         {
-            if (dirtyLabels.Count > 0)
+            if (summary == null)
             {
-                if (this.changes.get("labels") == null)
-                {
-                    this.changes.set("labels", new JsonObject());
-                }
+                summary = "";
+            }
 
-                foreach (string lang in dirtyLabels)
-                {
-                    string labelValue = "";
+            EntityStatus currentStatus = Status;
+            switch (currentStatus)
+            {
+                case EntityStatus.ToBeDeleted:
+                    Api.DeleteEntity(this.GetType() + ":" + Id.PrefixedId, LastRevisionId, summary);
+                    Status = EntityStatus.Deleted;
+                    break;
+                case EntityStatus.Changed:
+                case EntityStatus.New:
 
-                    // If there is label the text is the label itself, if not is a removed label (i.e. empty)
-                    if (_labels.ContainsKey(lang))
+                    if (dirtyLabels.Count > 0)
                     {
-                        labelValue = _labels[lang];
+                        if (this.changes.get("labels") == null)
+                        {
+                            this.changes.set("labels", new JsonObject());
+                        }
+
+                        foreach (string lang in dirtyLabels)
+                        {
+                            string labelValue = "";
+
+                            // If there is label the text is the label itself, if not is a removed label (i.e. empty)
+                            if (_labels.ContainsKey(lang))
+                            {
+                                labelValue = _labels[lang];
+                            }
+
+                            this.changes.get("labels").asObject().set(
+                                lang,
+                                new JsonObject()
+                                    .add("language", lang)
+                                    .add("value", labelValue)
+                            );
+                        }
                     }
 
-                    this.changes.get("labels").asObject().set(
-                        lang,
-                        new JsonObject()
-                            .add("language", lang)
-                            .add("value", labelValue)
-                    );
-                }
-            }
-
-            if (dirtyDescriptions.Count > 0)
-            {
-                if (this.changes.get("descriptions") == null)
-                {
-                    this.changes.set("descriptions", new JsonObject());
-                }
-
-                foreach (string lang in dirtyDescriptions)
-                {
-                    string descriptionValue = "";
-
-                    // If there is description the text is the label itself, if not is a removed label (i.e. empty)
-                    if (_descriptions.ContainsKey(lang))
+                    if (dirtyDescriptions.Count > 0)
                     {
-                        descriptionValue = _descriptions[lang];
+                        if (this.changes.get("descriptions") == null)
+                        {
+                            this.changes.set("descriptions", new JsonObject());
+                        }
+
+                        foreach (string lang in dirtyDescriptions)
+                        {
+                            string descriptionValue = "";
+
+                            // If there is description the text is the label itself, if not is a removed label (i.e. empty)
+                            if (_descriptions.ContainsKey(lang))
+                            {
+                                descriptionValue = _descriptions[lang];
+                            }
+
+                            this.changes.get("descriptions").asObject().set(
+                                lang,
+                                new JsonObject()
+                                    .add("language", lang)
+                                    .add("value", descriptionValue)
+                            );
+                        }
                     }
 
-                    this.changes.get("descriptions").asObject().set(
-                        lang,
-                        new JsonObject()
-                            .add("language", lang)
-                            .add("value", descriptionValue)
-                    );
-                }
-            }
 
+                    // Process aliases changes
+                    IEnumerable<EntityAlias> aliasesToSave = from a in _aliases
+                                                             where a.Status == AliasStatus.New || a.Status == AliasStatus.Removed
+                                                             select a;
 
-            // Process aliases changes
-            IEnumerable<EntityAlias> aliasesToSave = from a in _aliases
-                                                     where a.Status == AliasStatus.New || a.Status == AliasStatus.Removed
-                                                     select a;
+                    if (this.changes.get("aliases") == null && aliasesToSave.Any())
+                    {
+                        this.changes.set("aliases", new JsonArray());
+                    }
+                    foreach (EntityAlias a in aliasesToSave)
+                    {
+                        JsonObject jsonAlias = new JsonObject()
+                            .add("language", a.Language)
+                            .add("value", a.Label)
+                            .add(a.Status == AliasStatus.New ? "add" : "remove", true);
 
-            if (this.changes.get("aliases") == null && aliasesToSave.Any())
-            {
-                this.changes.set("aliases", new JsonArray());
-            }
-            foreach (EntityAlias a in aliasesToSave)
-            {
-                JsonObject jsonAlias = new JsonObject()
-                    .add("language", a.Language)
-                    .add("value", a.Label)
-                    .add(a.Status == AliasStatus.New ? "add" : "remove", true);
+                        this.changes.get("aliases").asArray().add(jsonAlias);
+                    }
 
-                this.changes.get("aliases").asArray().add(jsonAlias);
-            }
+                    Claim[] claimsToProcess = _claims.ToArray();
 
-            Claim[] claimsToProcess = _claims.ToArray();
+                    foreach (Claim c in claimsToProcess)
+                    {
+                        switch (c.status)
+                        {
+                            case Claim.ClaimStatus.Deleted:
+                                c.Save("");
+                                _claims.Remove(c);
+                                break;
+                            case Claim.ClaimStatus.Modified:
+                            case Claim.ClaimStatus.New:
+                                c.Save("");
+                                break;
+                        }
+                    }
 
-            foreach (Claim c in claimsToProcess)
-            {
-                switch (c.status)
-                {
-                    case Claim.ClaimStatus.Deleted:
-                        c.Save("");
-                        _claims.Remove(c);
-                        break;
-                    case Claim.ClaimStatus.Modified:
-                    case Claim.ClaimStatus.New:
-                        c.Save("");
-                        break;
-                }
-            }
-
-            if (!this.changes.isEmpty() || this.Id == null)
-            {
-                JsonObject result;
-                if (this.Id == null)
-                {
-                    result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
-                }
-                else
-                {
-                    result = this.Api.EditEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
-                }
-                if (result.get("entity") != null)
-                {
-                    this.FillData(result.get("entity").asObject());
-                }
-                this.UpdateLastRevisionIdFromResult(result);
-                this.changes = new JsonObject();
+                    if (!this.changes.isEmpty() || this.Id == null)
+                    {
+                        JsonObject result;
+                        if (this.Id == null)
+                        {
+                            result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
+                        }
+                        else
+                        {
+                            result = this.Api.EditEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
+                        }
+                        if (result.get("entity") != null)
+                        {
+                            this.FillData(result.get("entity").asObject());
+                            Status = EntityStatus.Loaded;
+                        }
+                        this.UpdateLastRevisionIdFromResult(result);
+                        this.changes = new JsonObject();
+                    }
+                    break;
             }
         }
 
@@ -601,6 +706,12 @@ namespace Wikibase
 
         public Statement AddStatement(Snak snak, Rank rank)
         {
+
+            if (!IsTouchable())
+            {
+                throw new InvalidOperationException("Cannot add a statement to an entity with status " + Status);
+            }
+
             Statement s = new Statement(this, snak, rank);
             _claims.Add(s);
             return s;
@@ -611,5 +722,41 @@ namespace Wikibase
         /// </summary>
         /// <returns>The type identifier.</returns>
         protected abstract String GetType();
+
+
+        protected bool IsTouchable()
+        {
+            return (Status != EntityStatus.Deleted && Status != EntityStatus.ToBeDeleted);
+        }
+
+
+        protected void Touch()
+        {
+            EntityStatus currentStatus = Status;
+            switch (currentStatus)
+            {
+                case EntityStatus.Changed:
+                    break;
+                case EntityStatus.New:
+                    break;
+                case EntityStatus.Loaded:
+                    Status = EntityStatus.Changed;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        protected virtual void Clear()
+        {
+            _aliases.Clear();
+            _claims.Clear();
+            _descriptions.Clear();
+            _labels.Clear();
+            _aliases.Clear();
+            dirtyDescriptions.Clear();
+            dirtyLabels.Clear();
+        }
+
     }
 }
