@@ -563,6 +563,33 @@ namespace Wikibase
 
         }
 
+        private bool SaveClaims()
+        {
+            Claim[] claimsToProcess = _claims.ToArray();
+
+            bool touched = false;
+
+            foreach (Claim c in claimsToProcess)
+            {
+                switch (c.status)
+                {
+                    case Claim.ClaimStatus.Deleted:
+                        c.Save("");
+                        _claims.Remove(c);
+                        touched = true;
+                        break;
+                    case Claim.ClaimStatus.Modified:
+                    case Claim.ClaimStatus.New:
+                        c.RefreshId();                     
+                        c.Save("");
+                        touched = true;
+                        break;
+                }
+            }
+
+            return touched;
+        }
+
         /// <summary>
         /// Save all changes.
         /// </summary>
@@ -639,8 +666,8 @@ namespace Wikibase
 
                     // Process aliases changes
                     IEnumerable<EntityAlias> aliasesToSave = from a in _aliases
-                                                             where a.Status == AliasStatus.New || a.Status == AliasStatus.Removed
-                                                             select a;
+                                                                where a.Status == AliasStatus.New || a.Status == AliasStatus.Removed
+                                                                select a;
 
                     if (this.changes.get("aliases") == null && aliasesToSave.Any())
                     {
@@ -656,42 +683,47 @@ namespace Wikibase
                         this.changes.get("aliases").asArray().add(jsonAlias);
                     }
 
-                    Claim[] claimsToProcess = _claims.ToArray();
 
-                    foreach (Claim c in claimsToProcess)
+                    JsonObject result;
+
+                    if (this.Id == null)
                     {
-                        switch (c.status)
+                        result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
+
+                        if (result.get("entity") != null)
                         {
-                            case Claim.ClaimStatus.Deleted:
-                                c.Save("");
-                                _claims.Remove(c);
-                                break;
-                            case Claim.ClaimStatus.Modified:
-                            case Claim.ClaimStatus.New:
-                                c.Save("");
-                                break;
+                            JsonObject data = result.get("entity").asObject();
+                            if (data.get("id") != null)
+                            {
+                                this.Id = new EntityId(data.get("id").asString());
+                            }
                         }
                     }
-
-                    if (!this.changes.isEmpty() || this.Id == null)
+                    else
                     {
-                        JsonObject result;
-                        if (this.Id == null)
-                        {
-                            result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
-                        }
-                        else
-                        {
-                            result = this.Api.EditEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
-                        }
+                        result = this.Api.EditEntity(this.Id.PrefixedId, this.changes, this.LastRevisionId, summary);
+                    }
+
+
+                    if (SaveClaims())
+                    {
+                        JsonObject entity = this.Api.GetEntityJsonFromId(this.Id);
+                        this.FillData(entity);
+                        Status = EntityStatus.Loaded;
+                    }
+                    else
+                    {
                         if (result.get("entity") != null)
                         {
                             this.FillData(result.get("entity").asObject());
                             Status = EntityStatus.Loaded;
                         }
-                        this.UpdateLastRevisionIdFromResult(result);
-                        this.changes = new JsonObject();
                     }
+
+
+                    this.UpdateLastRevisionIdFromResult(result);
+                    this.changes = new JsonObject();
+
                     break;
             }
         }
@@ -714,6 +746,7 @@ namespace Wikibase
 
             Statement s = new Statement(this, snak, rank);
             _claims.Add(s);
+            Touch();
             return s;
         }
 
@@ -730,7 +763,7 @@ namespace Wikibase
         }
 
 
-        protected void Touch()
+        internal void Touch()
         {
             EntityStatus currentStatus = Status;
             switch (currentStatus)

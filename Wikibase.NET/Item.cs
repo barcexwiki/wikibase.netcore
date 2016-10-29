@@ -146,7 +146,7 @@ namespace Wikibase
 
             if (_sitelinks.Remove(site))
             {
-                this.dirtyDescriptions.Add(site);
+                this.dirtySitelinks.Add(site);
                 Touch();
                 return true;
             }

@@ -107,8 +107,16 @@ namespace Wikibase
             this.Entity = entity;
             _mainSnak = snak;
             _qualifiers = new List<Qualifier>();
-            this.Id = this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString();
+            RefreshId();
             this.status = ClaimStatus.New;
+        }
+
+        internal void RefreshId()
+        {
+            if (this.Id == null)
+            {
+                this.Id = (Entity.Id != null ? this.Entity.Id.PrefixedId + "$" + Guid.NewGuid().ToString() : null);
+            }
         }
 
         /// <summary>
@@ -272,6 +280,7 @@ namespace Wikibase
         {
             if (status == ClaimStatus.Existing)
                 status = ClaimStatus.Modified;
+            this.Entity.Touch();
         }
 
         /// <summary>
