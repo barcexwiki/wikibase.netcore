@@ -55,6 +55,17 @@ namespace Wikibase
             return ParseGetEntitiesApiResponse(result);
         }
 
+        internal JsonObject GetEntityJsonFromId(EntityId id)
+        {
+            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            {
+                { "action", "wbgetentities" },
+                { "ids", id.PrefixedId }
+            };
+            JsonObject result = this.Get(parameters);
+            return result.get("entities").asObject();
+        }
+
         /// <summary>
         /// Get the data for the entities in the given languages from the provided sites and titles.
         /// </summary>
@@ -79,7 +90,7 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Create a list of entities form an api response.
+        /// Create a list of entities from an api response.
         /// </summary>
         /// <param name="result">The result of the api request</param>
         /// <returns>The list of entities</returns>
