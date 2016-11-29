@@ -82,7 +82,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public decimal UpperBound
+        public decimal? UpperBound
         {
             get;
             set;
@@ -92,7 +92,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public decimal LowerBound
+        public decimal? LowerBound
         {
             get;
             set;
@@ -138,8 +138,24 @@ namespace Wikibase.DataValues
             JsonObject obj = value.asObject();
             this.Amount = Decimal.Parse(obj.get(AmountJsonName).asString(), CultureInfo.InvariantCulture);
             this.Unit = obj.get(UnitJsonName).asString();
-            this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(), CultureInfo.InvariantCulture);
-            this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(), CultureInfo.InvariantCulture);
+            if (obj.get(UpperBoundJsonName) != null)
+            {
+                this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(), CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                this.UpperBound = null;
+            }
+                
+            if (obj.get(LowerBoundJsonName) != null)
+            {
+                this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(), CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                this.LowerBound = null;
+            }
+            
         }
 
         /// <summary>
@@ -160,10 +176,11 @@ namespace Wikibase.DataValues
             return new JsonObject()
                 .add(AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture))
                 .add(UnitJsonName, Unit)
-                .add(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.ToString(CultureInfo.InvariantCulture))
-                .add(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.ToString(CultureInfo.InvariantCulture));
+                .add(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.Value.ToString(CultureInfo.InvariantCulture))
+                .add(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.Value.ToString(CultureInfo.InvariantCulture));
         }
 
+        
         /// <summary>
         /// Compares two objects of this class and determines if they are equal in value
         /// </summary>
