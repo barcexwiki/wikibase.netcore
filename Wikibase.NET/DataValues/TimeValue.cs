@@ -159,7 +159,7 @@ namespace Wikibase.DataValues
                     throw new FormatException("The format of the time is not valid");
             }
 
-            public string ToString()
+            public override string ToString()
             {
                 string result = string.Format("{0:0000}-{1:00}-{2:00}T{3:00}:{4:00}:{5:00}Z", year, month, day, hour, minute, second);
                 if (year >= 0) result = "+" + result;
