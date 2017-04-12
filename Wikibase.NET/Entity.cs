@@ -605,7 +605,7 @@ namespace Wikibase
             switch (currentStatus)
             {
                 case EntityStatus.ToBeDeleted:
-                    Api.DeleteEntity(this.GetType() + ":" + Id.PrefixedId, LastRevisionId, summary);
+                    Api.DeleteEntity(this.GetEntityType() + ":" + Id.PrefixedId, LastRevisionId, summary);
                     Status = EntityStatus.Deleted;
                     break;
                 case EntityStatus.Changed:
@@ -688,7 +688,7 @@ namespace Wikibase
 
                     if (this.Id == null)
                     {
-                        result = this.Api.CreateEntity(this.GetType(), this.changes, this.LastRevisionId, summary);
+                        result = this.Api.CreateEntity(this.GetEntityType(), this.changes, this.LastRevisionId, summary);
 
                         if (result.get("entity") != null)
                         {
@@ -754,7 +754,7 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected abstract String GetType();
+        protected abstract String GetEntityType();
 
 
         protected bool IsTouchable()

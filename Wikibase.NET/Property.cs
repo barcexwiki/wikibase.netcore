@@ -59,7 +59,7 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override string GetType()
+        protected override string GetEntityType()
         {
             return "property";
         }

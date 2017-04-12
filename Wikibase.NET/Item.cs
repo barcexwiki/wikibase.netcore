@@ -157,7 +157,7 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override String GetType()
+        protected override String GetEntityType()
         {
             return "item";
         }
