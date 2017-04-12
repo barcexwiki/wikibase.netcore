@@ -36,8 +36,6 @@ namespace Wikibase.DataValues
              {EntityType.Item, "item"}
         };
 
-#warning Shouldn't this class simply contain a EntityId, which already encapsulates entityType and numericId
-
         /// <summary>
         /// Gets or sets the entity type
         /// </summary>
