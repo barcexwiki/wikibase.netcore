@@ -1,12 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -176,12 +173,16 @@ namespace Wikibase.DataValues
                 throw new InvalidOperationException("Globe value not set.");
             }
 
-            return new JsonObject()
-                .add(LatitudeJsonName, Latitude)
-                .add(LongitudeJsonName, Longitude)
-                // .add(AltitudeJsonName, altitude.ToString())
-                .add(PrecisionJsonName, Precision)
-                .add(GlobeJsonName, s_globeJsonNames[Globe]);
+            JToken j = new JObject(
+                            new JProperty(LatitudeJsonName, Latitude),
+                            new JProperty(LongitudeJsonName, Longitude),
+                            // new JProperty(AltitudeJsonName, altitude.ToString()),
+                            new JProperty(PrecisionJsonName, Precision),
+                            new JProperty(GlobeJsonName, s_globeJsonNames[Globe])
+                           );
+            string output = j.ToString();
+            return JsonValue.readFrom(output);
+
         }
 
 

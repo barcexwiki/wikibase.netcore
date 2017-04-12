@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -91,9 +92,12 @@ namespace Wikibase.DataValues
         /// <returns>Encoded instance.</returns>
         internal override JsonValue Encode()
         {
-            return new JsonObject()
-                .add(TextJsonName, Text)
-                .add(LanguageJsonName, Language);
+            JToken j = new JObject(
+                            new JProperty(TextJsonName, Text),
+                            new JProperty(LanguageJsonName, Language)
+                        );
+            string output = j.ToString();
+            return JsonValue.readFrom(output);
         }
 
         private bool IsEqual(MonolingualTextValue other)

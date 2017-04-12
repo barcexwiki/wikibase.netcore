@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Wikibase.DataValues
 {
@@ -66,7 +68,9 @@ namespace Wikibase.DataValues
         /// <returns>Encoded instance.</returns>
         internal override JsonValue Encode()
         {
-            return JsonValue.valueOf(Value);
+            JValue j = new JValue(Value);
+            string output = j.ToString(Formatting.None);
+            return JsonValue.readFrom(output);
         }
 
         private bool IsEqual(StringValue other)

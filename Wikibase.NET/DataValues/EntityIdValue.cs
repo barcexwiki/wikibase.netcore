@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -114,9 +115,12 @@ namespace Wikibase.DataValues
         /// <returns>The json value</returns>
         internal override JsonValue Encode()
         {
-            return new JsonObject()
-                .add(EntityTypeJsonName, _entityTypeJsonNames[EntityType])
-                .add(NumericIdJsonName, NumericId);
+            JToken j = new JObject(
+                new JProperty(EntityTypeJsonName, _entityTypeJsonNames[EntityType]), 
+                new JProperty(NumericIdJsonName, NumericId)
+                );
+            string output = j.ToString();
+            return JsonValue.readFrom(output);
         }
 
         /// <summary>

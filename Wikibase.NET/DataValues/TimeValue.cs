@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -462,13 +463,18 @@ namespace Wikibase.DataValues
                 throw new InvalidOperationException("Calendar model value not set.");
             }
 
-            return new JsonObject()
-                .add(TimeJsonName, Time)
-                .add(TimeZoneJsonName, TimeZoneOffset)
-                .add(BeforeJsonName, Before)
-                .add(AfterJsonName, After)
-                .add(PrecisionJsonName, Convert.ToInt32(Precision))
-                .add(CalendarModelJsonName, s_calendarModelIdentifiers[DisplayCalendarModel]);
+            JToken j = new JObject(
+                new JProperty(TimeJsonName, Time),
+                new JProperty(TimeZoneJsonName, TimeZoneOffset),
+                new JProperty(BeforeJsonName, Before),
+                new JProperty(AfterJsonName, After),
+                new JProperty(PrecisionJsonName, Convert.ToInt32(Precision)),
+                new JProperty(CalendarModelJsonName, s_calendarModelIdentifiers[DisplayCalendarModel])
+            );
+            string output = j.ToString();
+
+            return JsonValue.readFrom(output);
+
         }
 
         /// <summary>

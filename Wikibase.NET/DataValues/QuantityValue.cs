@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -173,14 +174,17 @@ namespace Wikibase.DataValues
         /// <returns>Encoded instance.</returns>
         internal override JsonValue Encode()
         {
-            return new JsonObject()
-                .add(AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture))
-                .add(UnitJsonName, Unit)
-                .add(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.Value.ToString(CultureInfo.InvariantCulture))
-                .add(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.Value.ToString(CultureInfo.InvariantCulture));
+            JToken j = new JObject(
+                new JProperty(AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture)),
+                new JProperty(UnitJsonName, Unit),
+                new JProperty(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.Value.ToString(CultureInfo.InvariantCulture)),
+                new JProperty(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.Value.ToString(CultureInfo.InvariantCulture))
+            );
+            string output = j.ToString();
+            return JsonValue.readFrom(output);
         }
 
-        
+
         /// <summary>
         /// Compares two objects of this class and determines if they are equal in value
         /// </summary>
