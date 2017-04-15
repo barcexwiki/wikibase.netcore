@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using MinimalJson;
 using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
@@ -174,43 +173,43 @@ namespace Wikibase.DataValues
         /// <summary>
         /// The identifier of this data type in the serialized json object.
         /// </summary>
-        public const String TypeJsonName = "time";
+        public const string TypeJsonName = "time";
 
         /// <summary>
         /// The name of the <see cref="DisplayCalendarModel"/> property in the serialized json object.
         /// </summary>
-        private const String CalendarModelJsonName = "calendarmodel";
+        private const string CalendarModelJsonName = "calendarmodel";
 
         /// <summary>
         /// The name of the <see cref="Time"/> property in the serialized json object.
         /// </summary>
-        private const String TimeJsonName = "time";
+        private const string TimeJsonName = "time";
 
         /// <summary>
         /// The name of the <see cref="TimeZoneOffset"/> property in the serialized json object.
         /// </summary>
-        private const String TimeZoneJsonName = "timezone";
+        private const string TimeZoneJsonName = "timezone";
 
         /// <summary>
         /// The name of the <see cref="Before"/> property in the serialized json object.
         /// </summary>
-        private const String BeforeJsonName = "before";
+        private const string BeforeJsonName = "before";
 
         /// <summary>
         /// The name of the <see cref="After"/> property in the serialized json object.
         /// </summary>
-        private const String AfterJsonName = "after";
+        private const string AfterJsonName = "after";
 
         /// <summary>
         /// The name of the <see cref="Precision"/> property in the serialized json object.
         /// </summary>
-        private const String PrecisionJsonName = "precision";
+        private const string PrecisionJsonName = "precision";
 
         #endregion Json names
 
         #region private fields
 
-        private static Dictionary<CalendarModel, String> s_calendarModelIdentifiers = new Dictionary<CalendarModel, String>()
+        private static Dictionary<CalendarModel, string> s_calendarModelIdentifiers = new Dictionary<CalendarModel, string>()
         {
              {CalendarModel.GregorianCalendar, "http://www.wikidata.org/entity/Q1985727" },
              {CalendarModel.JulianCalendar, "http://www.wikidata.org/entity/Q1985786"}
@@ -261,7 +260,7 @@ namespace Wikibase.DataValues
         /// Point in time, represented per ISO8601
         /// The year can have up to 11 digits, the date always be signed, in the format +00000002013-01-01T00:00:00Z
         /// </summary>
-        public String Time
+        public string Time
         {
             get
             {
@@ -283,7 +282,7 @@ namespace Wikibase.DataValues
         /// <summary>
         /// Timezone information as an offset from UTC in minutes.
         /// </summary>
-        public Int32 TimeZoneOffset
+        public int TimeZoneOffset
         {
             get
             {
@@ -302,7 +301,7 @@ namespace Wikibase.DataValues
         /// If the date is uncertain, how many units before the given time could it be?
         /// The unit is given by the <see cref="Precision"/>.
         /// </summary>
-        public Int32 Before
+        public int Before
         {
             get
             {
@@ -321,7 +320,7 @@ namespace Wikibase.DataValues
         /// If the date is uncertain, how many units after the given time could it be?
         /// The unit is given by the <see cref="Precision"/>.
         /// </summary>
-        public Int32 After
+        public int After
         {
             get
             {
@@ -370,7 +369,7 @@ namespace Wikibase.DataValues
         /// <param name="after">Number of <paramref name="precision">units</paramref> the actual time value could be after the given time value.</param>
         /// <param name="precision">Date/time precision.</param>
         /// <param name="calendarModel">Calendar model property.</param>
-        public TimeValue(String time, Int32 timeZoneOffset, Int32 before, Int32 after, TimeValuePrecision precision, CalendarModel calendarModel)
+        public TimeValue(string time, int timeZoneOffset, int before, int after, TimeValuePrecision precision, CalendarModel calendarModel)
         {
             if (!IsValidBeforeAfter(before))
                 throw new ArgumentException("Before is out of range (cannot be negative)", "before");
@@ -390,8 +389,9 @@ namespace Wikibase.DataValues
             _timeZoneOffset = timeZoneOffset;
             _before = before;
             _after = after;
-            this.Precision = precision;
-            this.DisplayCalendarModel = calendarModel;
+
+            Precision = precision;
+            DisplayCalendarModel = calendarModel;
         }
 
         /// <summary>
@@ -410,29 +410,34 @@ namespace Wikibase.DataValues
         }
 
         /// <summary>
-        /// Parses a <see cref="JsonValue"/> to a time value.
+        /// Parses a <see cref="JToken"/> to a time value.
         /// </summary>
-        /// <param name="value"><see cref="JsonValue"/> to parse.</param>
+        /// <param name="value"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-        internal TimeValue(JsonValue value)
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not a JSON object.</exception>
+        internal TimeValue(JToken value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
-            JsonObject obj = value.asObject();
-            this.Time = obj.get(TimeJsonName).asString();
-            this.TimeZoneOffset = obj.get(TimeZoneJsonName).asInt();
-            this.Before = obj.get(BeforeJsonName).asInt();
-            this.After = obj.get(AfterJsonName).asInt();
-            this.Precision = (TimeValuePrecision)obj.get(PrecisionJsonName).asInt();
-            var calendar = obj.get(CalendarModelJsonName).asString();
+            if (value.Type != JTokenType.Object)
+                throw new ArgumentException("not a JSON object", nameof(value));
+
+            JObject obj = (JObject)value;
+            Time = (string)obj[TimeJsonName];
+            TimeZoneOffset = (int)obj[TimeZoneJsonName];
+            Before = (int)obj[BeforeJsonName];
+            After = (int)obj[AfterJsonName];
+            Precision = (TimeValuePrecision)(int)obj[PrecisionJsonName];
+
+            string calendar = (string)obj[CalendarModelJsonName];
             if (s_calendarModelIdentifiers.Any(x => x.Value == calendar))
             {
-                this.DisplayCalendarModel = s_calendarModelIdentifiers.First(x => x.Value == calendar).Key;
+                DisplayCalendarModel = s_calendarModelIdentifiers.First(x => x.Value == calendar).Key;
             }
             else
             {
-                this.DisplayCalendarModel = CalendarModel.Unknown;
+                DisplayCalendarModel = CalendarModel.Unknown;
             }
         }
 
@@ -456,34 +461,35 @@ namespace Wikibase.DataValues
         /// </summary>
         /// <returns>Encoded class.</returns>
         /// <exception cref="InvalidOperationException"><see cref="DisplayCalendarModel"/> is <see cref="CalendarModel.Unknown"/>.</exception>
-        internal override JsonValue Encode()
+        internal override JToken Encode()
         {
             if (DisplayCalendarModel == CalendarModel.Unknown)
             {
                 throw new InvalidOperationException("Calendar model value not set.");
             }
 
-            JToken j = new JObject(
-                new JProperty(TimeJsonName, Time),
-                new JProperty(TimeZoneJsonName, TimeZoneOffset),
-                new JProperty(BeforeJsonName, Before),
-                new JProperty(AfterJsonName, After),
-                new JProperty(PrecisionJsonName, Convert.ToInt32(Precision)),
-                new JProperty(CalendarModelJsonName, s_calendarModelIdentifiers[DisplayCalendarModel])
-            );
-            string output = j.ToString();
-
-            return JsonValue.readFrom(output);
-
+            JToken j = new JObject
+            {
+                {TimeJsonName, Time},
+                {TimeZoneJsonName, TimeZoneOffset},
+                {BeforeJsonName, Before},
+                {AfterJsonName, After},
+                {PrecisionJsonName, Convert.ToInt32(Precision)},
+                {CalendarModelJsonName, s_calendarModelIdentifiers[DisplayCalendarModel]}
+            };
+            return j;
         }
 
         /// <summary>
         /// Gets the data type identifier.
         /// </summary>
         /// <returns></returns>
-        protected override string JsonName()
+        protected override string JsonName
         {
-            return TypeJsonName;
+            get
+            {
+                return TypeJsonName;
+            }
         }
 
         /// <summary>
@@ -495,12 +501,12 @@ namespace Wikibase.DataValues
             TimeValue otherTime = other as TimeValue;
 
             return (otherTime != null)
-                && (this.Time == otherTime.Time)
-                && (this.Before == otherTime.Before)
-                && (this.TimeZoneOffset == otherTime.TimeZoneOffset)
-                && (this.Precision == otherTime.Precision)
-                && (this.DisplayCalendarModel == otherTime.DisplayCalendarModel)
-                && (this.After == otherTime.After);
+                && (Time == otherTime.Time)
+                && (Before == otherTime.Before)
+                && (TimeZoneOffset == otherTime.TimeZoneOffset)
+                && (Precision == otherTime.Precision)
+                && (DisplayCalendarModel == otherTime.DisplayCalendarModel)
+                && (After == otherTime.After);
         }
 
         /// <summary>
@@ -510,13 +516,13 @@ namespace Wikibase.DataValues
         public override bool Equals(object other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return false;
             }
@@ -537,13 +543,13 @@ namespace Wikibase.DataValues
         public bool Equals(TimeValue other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -564,11 +570,11 @@ namespace Wikibase.DataValues
                 const int Multiplier = 16777619;
 
                 int hashCode = Base;
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Time) ? this.Time.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Before) ? this.Before.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.After) ? this.After.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.TimeZoneOffset) ? this.TimeZoneOffset.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.DisplayCalendarModel) ? this.DisplayCalendarModel.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Time) ? this.Time.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Before) ? this.Before.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.After) ? this.After.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.TimeZoneOffset) ? this.TimeZoneOffset.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.DisplayCalendarModel) ? this.DisplayCalendarModel.GetHashCode() : 0);
                 return hashCode;
             }
         }

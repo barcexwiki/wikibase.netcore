@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -11,18 +11,18 @@ namespace Wikibase
     /// </summary>
     public class Api
     {
-        private const String ApiName = "Wikibase.NET";
-        private const String ApiVersion = "0.1";
+        private const string ApiName = "Wikibase.NET";
+        private const string ApiVersion = "0.1";
 
         private Http _http;
-        private String _apiUrl;
-        private String _editToken;
+        private string _apiUrl;
+        private string _editToken;
 
         /// <summary>
         /// Gets the sets the time stamp of the last API action.
         /// </summary>
         /// <value>The time stamp of the last API action.</value>
-        protected Int32 LastEditTimestamp
+        protected int LastEditTimestamp
         {
             get;
             set;
@@ -32,7 +32,7 @@ namespace Wikibase
         /// Gets the sets the time lap between two consecutive API actions in milliseconds.
         /// </summary>
         /// <value>The time lap in milliseconds.</value>
-        public Int32 EditLaps
+        public int EditLaps
         {
             get;
             set;
@@ -42,7 +42,7 @@ namespace Wikibase
         /// Gets or sets if bot edits should be used.
         /// </summary>
         /// <value><c>true</c> if bot edits are used, <c>false</c> otherwise.</value>
-        public Boolean BotEdits
+        public bool BotEdits
         {
             get;
             set;
@@ -52,7 +52,7 @@ namespace Wikibase
         /// Gets or sets if the edits should be limited.
         /// </summary>
         /// <value><c>true</c> if the edits are limited, <c>false</c> otherwise.</value>
-        public Boolean EditLimit
+        public bool EditLimit
         {
             get;
             set;
@@ -62,7 +62,7 @@ namespace Wikibase
         /// Constructor.
         /// </summary>
         /// <param name="apiUrl">The URL of the wiki API like "http://www.wikidata.org/w/api.php".</param>
-        public Api(String apiUrl)
+        public Api(string apiUrl)
             : this(apiUrl, ApiName)
         {
         }
@@ -74,15 +74,15 @@ namespace Wikibase
         /// <param name="userAgent">The user agent.</param>
         /// <exception cref="ArgumentNullException"><paramref name="userAgent"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="apiUrl"/> is empty or <c>null</c>.</exception>
-        public Api(String apiUrl, String userAgent)
+        public Api(string apiUrl, string userAgent)
         {
-            if (String.IsNullOrWhiteSpace(apiUrl))
-                throw new ArgumentException("Invalid API URL", "apiUrl");
+            if (string.IsNullOrWhiteSpace(apiUrl))
+                throw new ArgumentException("Invalid API URL", nameof(apiUrl));
             if (userAgent == null)
-                throw new ArgumentNullException("userAgent");
+                throw new ArgumentNullException(nameof(userAgent));
 
             _apiUrl = apiUrl;
-            _http = new Http(String.Format(CultureInfo.InvariantCulture, "{0} {1}/{2}", userAgent.Trim(), ApiName, ApiVersion));
+            _http = new Http(string.Format(CultureInfo.InvariantCulture, "{0} {1}/{2}", userAgent.Trim(), ApiName, ApiVersion));
         }
 
         /// <summary>
@@ -91,23 +91,23 @@ namespace Wikibase
         /// <param name="parameters">The parameters.</param>
         /// <returns>The result.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> is <c>null</c>.</exception>
-        public JsonObject Get(Dictionary<String, String> parameters)
+        public JToken Get(Dictionary<string, string> parameters)
         {
             if (parameters == null)
-                throw new ArgumentNullException("parameters");
+                throw new ArgumentNullException(nameof(parameters));
 
             parameters["format"] = "json";
-            String url = _apiUrl + "?" + _http.BuildQuery(parameters);
-            String response = _http.Get(url);
-            JsonValue result = JsonValue.readFrom(response);
-            if (!result.isObject())
+            string url = _apiUrl + "?" + _http.BuildQuery(parameters);
+            string response = _http.Get(url);
+            JToken result = JToken.Parse(response);
+            if (result.Type != JTokenType.Object)
             {
                 return null;
             }
-            JsonObject obj = result.asObject();
-            if (obj.get("error") != null)
+            JToken obj = result;
+            if (obj["error"] != null)
             {
-                throw new ApiException(obj.get("error").asObject().get("info").asString());
+                throw new ApiException((string)obj["error"]["info"]);
             }
             return obj;
         }
@@ -119,20 +119,20 @@ namespace Wikibase
         /// <param name="postFields">The post fields.</param>
         /// <returns>The result.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> or <paramref name="postFields"/> is <c>null</c>.</exception>
-        public JsonObject Post(Dictionary<String, String> parameters, Dictionary<String, String> postFields)
+        public JToken Post(Dictionary<string, string> parameters, Dictionary<string, string> postFields)
         {
             if (parameters == null)
-                throw new ArgumentNullException("parameters");
+                throw new ArgumentNullException(nameof(parameters));
             if (postFields == null)
-                throw new ArgumentNullException("postFields");
+                throw new ArgumentNullException(nameof(postFields));
 
             parameters["format"] = "json";
-            String url = _apiUrl + "?" + _http.BuildQuery(parameters);
-            String response = _http.Post(url, postFields);
-            JsonObject result = JsonObject.readFrom(response);
-            if (result.get("error") != null)
+            string url = _apiUrl + "?" + _http.BuildQuery(parameters);
+            string response = _http.Post(url, postFields);
+            JToken result = JToken.Parse(response);
+            if (result["error"] != null)
             {
-                throw new ApiException(result.get("error").asObject().get("info").asString());
+                throw new ApiException((string)result["error"]["info"]);
             }
             return result;
         }
@@ -143,22 +143,22 @@ namespace Wikibase
         /// <param name="result">The result of the query.</param>
         /// <returns>An array containing the continuation parameter key at 0 and the continuation parameter value at 1.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is <c>null</c>.</exception>
-        public String[] GetContinueParam(JsonObject result)
-        {
-            if (result == null)
-                throw new ArgumentNullException("result");
+        //public string[] GetContinueParam(JsonObject result)
+        //{
+        //    if (result == null)
+        //        throw new ArgumentNullException(nameof(result));
 
-            if (result.get("query-continue") != null)
-            {
-                List<String> keys = (List<String>)result.get("query-continue").asObject().names();
-                List<String> keys2 = (List<String>)result.get("query-continue").asObject().get(keys[0]).asObject().names();
-                return new String[] { keys2[0], result.get("query-continue").asObject().get(keys[0]).asObject().get(keys2[0]).asString() };
-            }
-            else
-            {
-                return null;
-            }
-        }
+        //    if (result.get("query-continue") != null)
+        //    {
+        //        List<string> keys = (List<string>)result.get("query-continue").asObject().names();
+        //        List<string> keys2 = (List<string>)result.get("query-continue").asObject().get(keys[0]).asObject().names();
+        //        return new string[] { keys2[0], result.get("query-continue").asObject().get(keys[0]).asObject().get(keys2[0]).asString() };
+        //    }
+        //    else
+        //    {
+        //        return null;
+        //    }
+        //}
 
         /// <summary>
         /// Do login.
@@ -166,24 +166,24 @@ namespace Wikibase
         /// <param name="userName">The username.</param>
         /// <param name="password">The password.</param>
         /// <returns><c>true</c> if the user is logged in successfully, <c>false</c> otherwise.</returns>
-        public Boolean Login(String userName, String password)
+        public bool Login(string userName, string password)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "login" }
             };
-            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            Dictionary<string, string> postFields = new Dictionary<string, string>()
             {
                 { "lgname", userName },
                 { "lgpassword", password }
             };
-            JsonObject login = this.Post(parameters, postFields).get("login").asObject();
-            if (login.get("result").asString() == "NeedToken")
+            JToken login = Post(parameters, postFields)["login"];
+            if ((string)login["result"] == "NeedToken")
             {
-                postFields["lgtoken"] = login.get("token").asString();
-                login = this.Post(parameters, postFields).get("login").asObject();
+                postFields["lgtoken"] = (string)login["token"];
+                login = Post(parameters, postFields)["login"];
             }
-            if (login.get("result").asString() == "Success")
+            if ((string)login["result"] == "Success")
             {
                 _editToken = null;
                 return true;
@@ -199,11 +199,11 @@ namespace Wikibase
         /// </summary>
         public void Logout()
         {
-            Dictionary<string, string> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "logout" }
             };
-            this.Get(parameters);
+            Get(parameters);
             _editToken = null;
         }
 
@@ -211,21 +211,21 @@ namespace Wikibase
         /// Return the edit token for the current user.
         /// </summary>
         /// <returns>The edit token.</returns>
-        public String GetEditToken()
+        public string GetEditToken()
         {
             if (_editToken == null)
             {
-                Dictionary<String, String> parameters = new Dictionary<String, String>()
+                Dictionary<string, string> parameters = new Dictionary<string, string>()
                 {
                     { "action", "query" },
                     { "prop", "info" },
                     { "intoken", "edit" },
                     { "titles", "Main Page" }
                 };
-                JsonObject query = this.Get(parameters).get("query").asObject();
-                foreach (JsonObject.Member member in query.get("pages").asObject())
+                JToken query = Get(parameters)["query"];
+                foreach (JProperty member in query["pages"])
                 {
-                    return member.value.asObject().get("edittoken").asString();
+                    return (string)member.Value["edittoken"];
                 }
             }
             return _editToken;

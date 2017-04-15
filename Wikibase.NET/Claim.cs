@@ -1,14 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
-using MinimalJson;
 using Wikibase.DataValues;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -40,7 +36,7 @@ namespace Wikibase
         /// </summary>
         /// <value>The id.</value>
         /// <remarks>Consists of the property id plus an internal identifier. Is <c>null</c> if not saved to server yet.</remarks>
-        public String Id
+        public string Id
         {
             get;
             private set;
@@ -74,7 +70,7 @@ namespace Wikibase
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException();
 
                 if (!_mainSnak.PropertyId.Equals(value.PropertyId))
                 {
@@ -89,8 +85,8 @@ namespace Wikibase
         /// Creates a new instance.
         /// </summary>
         /// <param name="entity">Entity to which the claim belongs.</param>
-        /// <param name="data">JSon data to be parsed.</param>
-        internal Claim(Entity entity, JsonObject data)
+        /// <param name="data">JToken data to be parsed.</param>
+        internal Claim(Entity entity, JToken data)
         {
             _qualifiers = new List<Qualifier>();
             this.Entity = entity;
@@ -122,62 +118,61 @@ namespace Wikibase
         /// <summary>
         /// Parses the <paramref name="data"/> and adds the results to this instance.
         /// </summary>
-        /// <param name="data"><see cref="JsonObject"/> to parse.</param>
+        /// <param name="data"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected virtual void FillData(JsonObject data)
+        protected virtual void FillData(JToken data)
         {
+
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
-            if (data.get("mainsnak") != null)
+            if (data["mainsnak"] != null)
             {
-                _mainSnak = new Snak(data.get("mainsnak").asObject());
+                _mainSnak = new Snak(data["mainsnak"]);
             }
-            if (data.get("id") != null)
+            if (data["id"] != null)
             {
-                this.Id = data.get("id").asString();
+                this.Id = (string)data["id"];
             }
 
-            var qualifiersData = data.get("qualifiers");
-            if (qualifiersData != null && qualifiersData.isObject())
+            JToken qualifiersData = data["qualifiers"];
+            if (qualifiersData != null && qualifiersData.Type == JTokenType.Object)
             {
                 _qualifiers.Clear();
-                var qualifiersSection = qualifiersData.asObject();
 
-                foreach (var entry in qualifiersSection.names())
+                foreach (JProperty entry in qualifiersData)
                 {
-                    var json = qualifiersSection.get(entry).asArray();
-                    foreach (var value in json)
+                    foreach (JToken value in entry.Value)
                     {
-                        var parsedQualifier = new Qualifier(this, value as JsonObject);
+                        Qualifier parsedQualifier = new Qualifier(this, value);
                         _qualifiers.Add(parsedQualifier);
                     }
                 }
             }
 
-            var qualifiersOrderSection = data.get("qualifiers-order");
-            if (qualifiersOrderSection != null && qualifiersOrderSection.isArray())
+            JToken qualifiersOrderSection = data["qualifiers-order"];
+            if (qualifiersOrderSection != null && qualifiersOrderSection.Type == JTokenType.Array)
             {
-                _qualifiersOrder.Clear();
-                var qualifiersOrderArray = qualifiersOrderSection.asArray();
+                _qualifiersOrder.Clear();                
 
-                foreach (var property in qualifiersOrderArray.getValues())
+                foreach (JToken property in qualifiersOrderSection)
                 {
-                    _qualifiersOrder.Add(new EntityId(property.asString()));
+                    _qualifiersOrder.Add(new EntityId((string)(property)));
                 }
             }
 
             this.status = ClaimStatus.Existing;
         }
 
-        internal static Claim NewFromArray(Entity entity, JsonObject data)
+        internal static Claim NewFromArray(Entity entity, JToken data)
         {
-            if (entity == null)
-                throw new ArgumentNullException("entity");
 
-            if (data.get("type") != null)
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+
+            if (data["type"] != null)
             {
-                switch (data.get("type").asString())
+                switch ((string)data["type"])
                 {
                     case "statement":
                         return new Statement(entity, data);
@@ -185,23 +180,23 @@ namespace Wikibase
                         return new Claim(entity, data);
                 }
             }
-            throw new ArgumentException("Unknown type in data", "data");
+            throw new ArgumentException("Unknown type in data", nameof(data));
         }
 
         /// <summary>
         /// Saves the claim to the server.
         /// </summary>
         /// <param name="summary">Edit summary.</param>
-        internal void Save(String summary)
+        internal void Save(string summary)
         {
-            Dictionary<SnakType, String> snakTypeIdentifiers = new Dictionary<SnakType, String>()
+            Dictionary<SnakType, string> snakTypeIdentifiers = new Dictionary<SnakType, string>()
             {
                 {SnakType.None,"novalue"},
                 {SnakType.SomeValue,"somevalue"},
                 {SnakType.Value,"value"},
             };
 
-            JsonObject result;
+            JToken result;
             switch (this.status)
             {
                 case ClaimStatus.New:
@@ -220,14 +215,14 @@ namespace Wikibase
         /// Updates instance from API call result.
         /// </summary>
         /// <param name="result">Json result.</param>
-        protected void UpdateDataFromResult(JsonObject result)
+        protected void UpdateDataFromResult(JToken result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
-            if (result.get("claim") != null)
+            if (result["claim"] != null)
             {
-                this.FillData(result.get("claim").asObject());
+                this.FillData(result["claim"]);
             }
             this.Entity.UpdateLastRevisionIdFromResult(result);
         }
@@ -288,9 +283,9 @@ namespace Wikibase
         /// </summary>
         /// <param name="value">Property identifier string.</param>
         /// <returns><c>true</c> if is about the property, <c>false</c> otherwise.</returns>
-        public Boolean IsAboutProperty(String value)
+        public bool IsAboutProperty(string value)
         {
-            var property = new EntityId(value);
+            EntityId property = new EntityId(value);
             return property.Equals(MainSnak.PropertyId);
         }
 
@@ -299,7 +294,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="property">The property.</param>
         /// <returns>The qualifiers.</returns>
-        public Qualifier[] GetQualifiers(String property)
+        public Qualifier[] GetQualifiers(string property)
         {
             var qualifierList = from q in _qualifiers
                                 where q.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
@@ -311,42 +306,44 @@ namespace Wikibase
 
 
         /// <summary>
-        /// Encodes this claim in a JsonObject
+        /// Encodes this claim in a JObject
         /// </summary>
-        /// <returns>a JsonObject with the claim encoded.</returns>
-        protected virtual JsonObject Encode()
+        /// <returns>a JObject with the claim encoded.</returns>
+        protected virtual JObject Encode()
         {
-            JsonObject encoded = new JsonObject()
-                .add("mainsnak", MainSnak.Encode())
-                .add("id", this.Id);
+            JObject encoded = new JObject
+            {
+                { "mainsnak", MainSnak.Encode() },
+                { "id", this.Id }
+            };
 
-            JsonObject qualifiersSection = new JsonObject();
+            JObject qualifiersSection = new JObject();
 
             foreach (EntityId property in _qualifiersOrder)
             {
-                var qualifiersForTheProperty = GetQualifiers(property.PrefixedId);
+                Qualifier[] qualifiersForTheProperty = GetQualifiers(property.PrefixedId);
 
                 if (qualifiersForTheProperty.Any())
                 {
-                    var arrayOfQualifiers = new JsonArray();
+                    JArray arrayOfQualifiers = new JArray();
 
                     foreach (Qualifier q in qualifiersForTheProperty)
                     {
-                        arrayOfQualifiers.add(q.Encode());
+                        arrayOfQualifiers.Add(q.Encode());
                     }
 
-                    qualifiersSection.add(property.PrefixedId.ToUpper(), arrayOfQualifiers);
+                    qualifiersSection.Add( new JProperty(property.PrefixedId.ToUpper(), arrayOfQualifiers));
                 }
             }
 
-            JsonArray qualifiersOrderSection = new JsonArray();
+            JArray qualifiersOrderSection = new JArray();
             foreach (EntityId property in _qualifiersOrder)
             {
-                qualifiersOrderSection.add(property.PrefixedId.ToUpper());
+                qualifiersOrderSection.Add(property.PrefixedId.ToUpper());
             }
 
-            encoded.add("qualifiers", qualifiersSection);
-            encoded.add("qualifiers-order", qualifiersOrderSection);
+            encoded.Add("qualifiers", qualifiersSection);
+            encoded.Add("qualifiers-order", qualifiersOrderSection);
 
             return encoded;
         }

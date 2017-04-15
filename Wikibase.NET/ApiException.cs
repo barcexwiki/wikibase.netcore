@@ -21,7 +21,7 @@ namespace Wikibase
         /// Creates a new instance of <see cref="ApiException"/> with the given <paramref name="message"/>.
         /// </summary>
         /// <param name="message">Exception message.</param>
-        public ApiException(String message)
+        public ApiException(string message)
             : base(message)
         {
         }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -42,14 +42,14 @@ namespace Wikibase
         /// <summary>
         /// The name of the <see cref="References"/> property in the serialized json object.
         /// </summary>
-        private const String ReferencesJsonName = "references";
+        private const string ReferencesJsonName = "references";
 
         /// <summary>
         /// The name of the <see cref="Rank"/> property in the serialized json object.
         /// </summary>
-        private const String RankJsonName = "rank";
+        private const string RankJsonName = "rank";
 
-        private static Dictionary<Rank, String> s_rankJsonNames = new Dictionary<Rank, String>()
+        private static Dictionary<Rank, string> s_rankJsonNames = new Dictionary<Rank, string>()
         {
              {Rank.Preferred, "preferred" },
              {Rank.Normal, "normal" },
@@ -84,7 +84,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="entity">Entity to which the statement belongs.</param>
         /// <param name="data">JSon data to be parsed.</param>
-        internal Statement(Entity entity, JsonObject data)
+        internal Statement(Entity entity, JToken data)
             : base(entity, data)
         {
         }
@@ -104,17 +104,18 @@ namespace Wikibase
         /// <summary>
         /// Parses the <paramref name="data"/> and adds the results to this instance.
         /// </summary>
-        /// <param name="data"><see cref="JsonObject"/> to parse.</param>
+        /// <param name="data"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void FillData(JsonObject data)
+        protected override void FillData(JToken data)
         {
+
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             base.FillData(data);
-            if (data.get(RankJsonName) != null)
+            if (data[RankJsonName] != null)
             {
-                var rank = data.get(RankJsonName).asString();
+                string rank = (string)data[RankJsonName];
                 if (s_rankJsonNames.Any(x => x.Value == rank))
                 {
                     this.Rank = s_rankJsonNames.First(x => x.Value == rank).Key;
@@ -124,12 +125,12 @@ namespace Wikibase
                     this.Rank = Rank.Unknown;
                 }
             }
-            if (data.get(ReferencesJsonName) != null)
+            if (data[ReferencesJsonName] != null)
             {
                 _references.Clear();
-                foreach (JsonValue value in data.get(ReferencesJsonName).asArray())
+                foreach (JToken value in data[ReferencesJsonName])
                 {
-                    Reference reference = new Reference(this, value.asObject());
+                    Reference reference = new Reference(this, JToken.Parse(value.ToString()) );
                     _references.Add(reference);
                 }
             }
@@ -145,7 +146,7 @@ namespace Wikibase
         public Reference AddReference(IEnumerable<Snak> snaks)
         {
             if (snaks == null)
-                throw new ArgumentNullException("snaks");
+                throw new ArgumentNullException(nameof(snaks));
 
             Reference reference = new Reference(this, snaks);
             AddReference(reference);
@@ -161,7 +162,7 @@ namespace Wikibase
         public Reference AddReference(Snak snak)
         {
             if (snak == null)
-                throw new ArgumentNullException("snak");
+                throw new ArgumentNullException(nameof(snak));
 
             return AddReference(new Snak[] { snak });
         }
@@ -184,24 +185,23 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Encodes this statement in a JsonObject
+        /// Encodes this statement in a JObject
         /// </summary>
-        /// <returns>a JsonObject with the statement encoded.</returns>
-        protected override JsonObject Encode()
+        /// <returns>a JObject with the statement encoded.</returns>
+        protected override JObject Encode()
         {
-            JsonObject encodedClaim = base.Encode();
+            JObject encodedClaim = base.Encode();
 
-            encodedClaim.add("type", "statement")
-                .add("rank", s_rankJsonNames[Rank]);
+            encodedClaim.Add("type", "statement");
+            encodedClaim.Add("rank", s_rankJsonNames[Rank]);
 
-
-            JsonArray referencesSection = new JsonArray();
+            JArray referencesSection = new JArray();
 
             foreach (Reference reference in _references)
             {
-                referencesSection.add(reference.Encode());
+                referencesSection.Add(reference.Encode());
             }
-            encodedClaim.add("references", referencesSection);
+            encodedClaim.Add("references", referencesSection);
 
 
             return encodedClaim;

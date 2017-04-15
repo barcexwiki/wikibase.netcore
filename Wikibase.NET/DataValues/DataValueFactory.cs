@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
     /// <summary>
-    /// Factory to create the correct <see cref="DataValue"/> from a <see cref="JsonObject"/>.
+    /// Factory to create the correct <see cref="DataValue"/> from a <see cref="JToken"/>.
     /// </summary>
     internal static class DataValueFactory
     {
-        internal static DataValue CreateFromJsonObject(JsonObject data)
+        internal static DataValue CreateFromJsonObject(JToken data)
         {
-            return CreateFromJsonValue(data.get(DataValue.ValueTypeJsonName).asString(), data.get(DataValue.ValueJsonName));
+            return CreateFromJsonValue((string)data[DataValue.ValueTypeJsonName], data[DataValue.ValueJsonName]);
         }
 
-        internal static DataValue CreateFromJsonValue(String type, JsonValue value)
-        {
+        internal static DataValue CreateFromJsonValue(string type, JToken value)
+        {               
             switch (type)
             {
                 case EntityIdValue.TypeJsonName:

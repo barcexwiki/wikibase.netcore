@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
 {
@@ -16,12 +16,12 @@ namespace Wikibase.DataValues
         /// <summary>
         /// Json name for the datavalue type.
         /// </summary>
-        public const String ValueTypeJsonName = "type";
+        public const string ValueTypeJsonName = "type";
 
         /// <summary>
         /// Json name for the datavalue content.
         /// </summary>
-        public const String ValueJsonName = "value";
+        public const string ValueJsonName = "value";
 
         #endregion Json names
 
@@ -29,18 +29,18 @@ namespace Wikibase.DataValues
         /// Get the hash.
         /// </summary>
         /// <returns>The hash.</returns>
-        public String getHash()
+        public string GetHash()
         {
-            return md5(this.Encode().ToString());
+            return Md5(this.Encode().ToString());
         }
 
-        private static String md5(String text)
+        private static string Md5(string text)
         {
             if ((text == null) || (text.Length == 0))
             {
-                return String.Empty;
+                return string.Empty;
             }
-            Byte[] result;
+            byte[] result;
             MD5 md5provider = null;
             try
             {
@@ -61,7 +61,7 @@ namespace Wikibase.DataValues
         ///</summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><c>true</c> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <c>false</c>.</returns>
-        public override Boolean Equals(Object other)
+        public override bool Equals(object other)
         {
             if (this == other)
             {
@@ -83,42 +83,44 @@ namespace Wikibase.DataValues
         /// Gets a hash code for the current object.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
-        public override Int32 GetHashCode()
+        public override int GetHashCode()
         {
-            return this.Encode().GetHashCode();
+            return Encode().GetHashCode();
         }
 
         /// <summary>
         /// Converts the instance to a string.
         /// </summary>
         /// <returns>String representation of the instance.</returns>
-        public override String ToString()
+        public override string ToString()
         {
-            return this.Encode().ToString();
+            return Encode().ToString();
         }
 
         /// <summary>
         /// Get the type of the data value.
         /// </summary>
         /// <returns>Data type identifier.</returns>
-        protected abstract String JsonName();
+        protected abstract string JsonName { get;  }
 
         /// <summary>
         /// Encode the value part of the data value to json.
         /// </summary>
         /// <returns>The json value.</returns>
-        internal abstract JsonValue Encode();
+        internal abstract JToken Encode();
 
         /// <summary>
         /// Encode the data value to json.
         /// </summary>
         /// <returns>The json value.</returns>
-        internal JsonValue fullEncode()
+        internal JToken FullEncode()
         {
-            JsonObject data = new JsonObject()
-                .add(ValueTypeJsonName, this.JsonName())
-                .add(ValueJsonName, this.Encode());
-            return data;
+            JToken j = new JObject
+            {
+                { ValueTypeJsonName, JsonName },
+                { ValueJsonName, Encode() }
+            };
+            return j;
         }
     }
 }

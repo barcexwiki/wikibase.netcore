@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -33,7 +33,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="api">The api</param>
         /// <param name="data">The json object to be parsed.</param>
-        internal Property(WikibaseApi api, JsonObject data)
+        internal Property(WikibaseApi api, JToken data)
             : base(api, data)
         {
         }
@@ -41,17 +41,17 @@ namespace Wikibase
         /// <summary>
         /// Parses the <paramref name="data"/> and adds the results to this instance.
         /// </summary>
-        /// <param name="data"><see cref="JsonObject"/> to parse.</param>
+        /// <param name="data"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void FillData(JsonObject data)
+        protected override void FillData(JToken data)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             base.FillData(data);
-            if (data.get("datatype") != null)
+            if (data["datatype"] != null)
             {
-                this.DataType = data.get("datatype").asString();
+                this.DataType = (string)data["datatype"];
             }
         }
 

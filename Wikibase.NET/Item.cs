@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MinimalJson;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -10,7 +10,7 @@ namespace Wikibase
     /// </summary>
     public class Item : Entity
     {
-        private Dictionary<String, String> _sitelinks = new Dictionary<String, String>();
+        private Dictionary<string, string> _sitelinks = new Dictionary<string, string>();
 
         /// <summary>
         /// List of site codes whose sitelinks have changed
@@ -23,22 +23,22 @@ namespace Wikibase
         /// <summary>
         /// The name of the <see cref="_sitelinks"/> property in the serialized json object.
         /// </summary>
-        private const String SiteLinksJsonName = "sitelinks";
+        private const string SiteLinksJsonName = "sitelinks";
 
         /// <summary>
         /// The name of the site property of a sitelink in the serialized json object.
         /// </summary>
-        private const String SiteLinksSiteJsonName = "site";
+        private const string SiteLinksSiteJsonName = "site";
 
         /// <summary>
         /// The name of the title property of a sitelink in the serialized json object.
         /// </summary>
-        private const String SiteLinksTitleJsonName = "title";
+        private const string SiteLinksTitleJsonName = "title";
 
         /// <summary>
         /// The name of the bagdes property of a sitelink in the serialized json object.
         /// </summary>
-        private const String SiteLinksBadgesJsonName = "badges";
+        private const string SiteLinksBadgesJsonName = "badges";
 
         #endregion Json names
 
@@ -56,7 +56,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="api">The api.</param>
         /// <param name="data">Json object to be parsed and added.</param>
-        internal Item(WikibaseApi api, JsonObject data)
+        internal Item(WikibaseApi api, JToken data)
             : base(api, data)
         {
         }
@@ -64,24 +64,24 @@ namespace Wikibase
         /// <summary>
         /// Parses the <paramref name="data"/> and adds the results to this instance.
         /// </summary>
-        /// <param name="data"><see cref="JsonObject"/> to parse.</param>
+        /// <param name="data"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void FillData(JsonObject data)
+        protected override void FillData(JToken data)
         {
+
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             base.FillData(data);
-            if (data.get(SiteLinksJsonName) != null)
+            if (data[SiteLinksJsonName] != null)
             {
                 _sitelinks.Clear();
-                var jasonSiteLinks = data.get(SiteLinksJsonName);
-                if (jasonSiteLinks != null && jasonSiteLinks.isObject())
+                JToken jsonSiteLinks = data[SiteLinksJsonName];
+                if (jsonSiteLinks != null && jsonSiteLinks.Type == JTokenType.Object )
                 {
-                    foreach (JsonObject.Member member in jasonSiteLinks.asObject())
-                    {
-                        JsonObject obj = member.value.asObject();
-                        _sitelinks.Add(obj.get(SiteLinksSiteJsonName).asString(), obj.get(SiteLinksTitleJsonName).asString());
+                    foreach (JProperty member in jsonSiteLinks)
+                    {                        
+                        _sitelinks.Add((string)member.Value[SiteLinksSiteJsonName], (string)member.Value[SiteLinksTitleJsonName]);
                         // ToDo: parse badges
                     }
                 }
@@ -94,9 +94,9 @@ namespace Wikibase
         /// <returns>The sitelinks.</returns>
         /// <remarks>Key is the project name, value the page name. To modify the sitelinks, don't modify this dictionary, but use
         /// <see cref="SetSitelink"/> and <see cref="RemoveSitelink"/>.</remarks>
-        public Dictionary<String, String> GetSitelinks()
+        public Dictionary<string, string> GetSitelinks()
         {
-            return new Dictionary<String, String>(_sitelinks);
+            return new Dictionary<string, string>(_sitelinks);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site</param>
         /// <returns></returns>
-        public String GetSitelink(String site)
+        public string GetSitelink(string site)
         {
             return _sitelinks[site];
         }
@@ -114,11 +114,11 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site.</param>
         /// <param name="title">The sitelink.</param>
-        public void SetSitelink(String site, String title)
+        public void SetSitelink(string site, string title)
         {
-            if (String.IsNullOrWhiteSpace(title))
+            if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("empty title");
-            if (String.IsNullOrWhiteSpace(site))
+            if (string.IsNullOrWhiteSpace(site))
                 throw new ArgumentException("empty site");
 
             if (!IsTouchable())
@@ -136,7 +136,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="site">The site</param>
         /// <returns><c>true</c> if the sitelink was removed successfully, <c>false</c> otherwise.</returns>
-        public Boolean RemoveSitelink(String site)
+        public bool RemoveSitelink(string site)
         {
 
             if (!IsTouchable())
@@ -157,7 +157,7 @@ namespace Wikibase
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override String GetEntityType()
+        protected override string GetEntityType()
         {
             return "item";
         }
@@ -175,9 +175,9 @@ namespace Wikibase
                 case EntityStatus.New:
                     if (dirtySitelinks.Count > 0)
                     {
-                        if (this.changes.get(SiteLinksJsonName) == null)
+                        if (this.changes[SiteLinksJsonName] == null)
                         {
-                            this.changes.set(SiteLinksJsonName, new JsonObject());
+                            this.changes[SiteLinksJsonName] = new JObject();
                         }
 
                         foreach (string site in dirtySitelinks)
@@ -190,12 +190,12 @@ namespace Wikibase
                                 sitelinkValue = _sitelinks[site];
                             }
 
-                            this.changes.get(SiteLinksJsonName).asObject().set(
-                                site,
-                                new JsonObject()
-                                    .add(SiteLinksSiteJsonName, site)
-                                    .add(SiteLinksTitleJsonName, sitelinkValue)
-                            );
+                            this.changes[SiteLinksJsonName][site] = new JObject
+                                {
+                                    {SiteLinksSiteJsonName, site},
+                                    {SiteLinksTitleJsonName, sitelinkValue}
+                                };
+                                
                         }
                     }
                     break;

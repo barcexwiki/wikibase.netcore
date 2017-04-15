@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MinimalJson;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 
 namespace Wikibase.DataValues
 {
@@ -17,7 +15,7 @@ namespace Wikibase.DataValues
         /// <summary>
         /// The identifier of this data type in the serialized json object.
         /// </summary>
-        public const String TypeJsonName = "string";
+        public const string TypeJsonName = "string";
 
         #endregion Json names
 
@@ -25,7 +23,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the string value.
         /// </summary>
         /// <value>The string value.</value>
-        public String Value
+        public string Value
         {
             get;
             set;
@@ -35,42 +33,48 @@ namespace Wikibase.DataValues
         /// Creates a new instance of <see cref="StringValue"/> with the given value.
         /// </summary>
         /// <param name="value">Value to be added.</param>
-        public StringValue(String value)
+        public StringValue(string value)
         {
             this.Value = value;
         }
 
         /// <summary>
-        /// Parses a <see cref="JsonValue"/> to a <see cref="StringValue"/>
+        /// Parses a <see cref="JToken"/> to a <see cref="StringValue"/>
         /// </summary>
-        /// <param name="value"><see cref="JsonValue"/> to be parsed.</param>
+        /// <param name="value"><see cref="JToken"/> to be parsed.</param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-        internal StringValue(JsonValue value)
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not a JSON string value.</exception>
+        internal StringValue(JToken value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
-            this.Value = value.asString();
+            if (value.Type != JTokenType.String)
+                throw new ArgumentException("not a JSON string value", nameof(value));
+
+            Value = (string)value;
         }
 
         /// <summary>
         /// Gets the data type identifier.
         /// </summary>
         /// <returns>Data type identifier.</returns>
-        protected override String JsonName()
+        protected override string JsonName
         {
-            return TypeJsonName;
+            get
+            {
+                return TypeJsonName;
+            }
         }
 
         /// <summary>
         /// Encodes the instance in a <see cref="JsonValue"/>.
         /// </summary>
         /// <returns>Encoded instance.</returns>
-        internal override JsonValue Encode()
+        internal override JToken Encode()
         {
-            JValue j = new JValue(Value);
-            string output = j.ToString(Formatting.None);
-            return JsonValue.readFrom(output);
+            JToken j = new JValue(Value);
+            return j;
         }
 
         private bool IsEqual(StringValue other)
@@ -88,13 +92,13 @@ namespace Wikibase.DataValues
         public override bool Equals(object value)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, value))
+            if (object.ReferenceEquals(null, value))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, value))
+            if (object.ReferenceEquals(this, value))
             {
                 return false;
             }
@@ -115,13 +119,13 @@ namespace Wikibase.DataValues
         public bool Equals(StringValue number)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, number))
+            if (object.ReferenceEquals(null, number))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, number))
+            if (object.ReferenceEquals(this, number))
             {
                 return true;
             }

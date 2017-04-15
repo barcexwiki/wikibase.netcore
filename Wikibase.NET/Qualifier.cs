@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MinimalJson;
 using Wikibase.DataValues;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -26,7 +26,7 @@ namespace Wikibase
         /// Gets the hash.
         /// </summary>
         /// <value>The hash.</value>
-        public String Hash
+        public string Hash
         {
             get;
             private set;
@@ -54,18 +54,18 @@ namespace Wikibase
         }
 
         /// <summary>
-        /// Creates a <see cref="Qualifier"/> from a <see cref="JsonObject"/>.
+        /// Creates a <see cref="Qualifier"/> from a <see cref="JToken"/>.
         /// </summary>
         /// <param name="statement">Statement to which the new qualifier belongs.</param>
-        /// <param name="data">JSonObject to be parsed.</param>
+        /// <param name="data">JToken to be parsed.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        internal Qualifier(Claim statement, JsonObject data)
+        internal Qualifier(Claim statement, JToken data)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
-            this.Claim = statement;
-            this.FillFromArray(data);
+            Claim = statement;
+            FillFromArray(data);
         }
 
         /// <summary>
@@ -73,49 +73,17 @@ namespace Wikibase
         /// </summary>
         /// <param name="data">JSon array to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected override void FillFromArray(JsonObject data)
+        protected override void FillFromArray(JToken data)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             base.FillFromArray(data);
-            if (data.get("hash") != null)
+            if (data["hash"] != null)
             {
-                this.Hash = data.get("hash").asString();
+                this.Hash = (string)data["hash"];
             }
         }
 
-        /// <summary>
-        /// Updates instance from API call result.
-        /// </summary>
-        /// <param name="result">Json result.</param>
-        protected void UpdateDataFromResult(JsonObject result)
-        {
-            if (result == null)
-                throw new ArgumentNullException("result");
-
-            // result is a complete claim
-            if (result.get("claim") != null)
-            {
-                var claim = result.get("claim").asObject();
-                if (claim.get("qualifiers") != null)
-                {
-                    var qualifiers = claim.get("qualifiers").asObject();
-                    foreach (var entry in qualifiers.names())
-                    {
-                        if (new EntityId(entry).Equals(PropertyId))
-                        {
-                            var json = qualifiers.get(entry).asArray();
-                            foreach (var value in json)
-                            {
-                                FillFromArray(value as JsonObject);
-                            }
-                        }
-                    }
-                }
-            }
-
-            this.Claim.Entity.UpdateLastRevisionIdFromResult(result);
-        }
     }
 }

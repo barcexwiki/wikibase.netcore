@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MinimalJson;
 using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
@@ -17,23 +16,23 @@ namespace Wikibase.DataValues
         /// <summary>
         /// The identifier of this data type in the serialized json object.
         /// </summary>
-        public const String TypeJsonName = "wikibase-entityid";
+        public const string TypeJsonName = "wikibase-entityid";
 
         /// <summary>
         /// The name of the <see cref="NumericId"/> property in the serialized json object.
         /// </summary>
-        private const String NumericIdJsonName = "numeric-id";
+        private const string NumericIdJsonName = "numeric-id";
 
         /// <summary>
         /// The name of the <see cref="EntityType"/> property in the serialized json object.
         /// </summary>
-        private const String EntityTypeJsonName = "entity-type";
+        private const string EntityTypeJsonName = "entity-type";
 
         #endregion Json names
 
-        private Dictionary<EntityType, String> _entityTypeJsonNames = new Dictionary<EntityType, String>()
+        private Dictionary<EntityType, string> _entityTypeJsonNames = new Dictionary<EntityType, string>()
         {
-             {EntityType.Property, "property" },
+             {EntityType.Property, "property"},
              {EntityType.Item, "item"}
         };
 
@@ -52,7 +51,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the numeric id.
         /// </summary>
         /// <value>The numeric id.</value>
-        public Int32 NumericId
+        public int NumericId
         {
             get;
             private set;
@@ -63,7 +62,7 @@ namespace Wikibase.DataValues
         /// </summary>
         /// <param name="entityType">The entity type ("item").</param>
         /// <param name="numericId">The numeric id.</param>
-        public EntityIdValue(EntityType entityType, Int32 numericId)
+        public EntityIdValue(EntityType entityType, int numericId)
         {
             this.EntityType = entityType;
             this.NumericId = numericId;
@@ -80,54 +79,59 @@ namespace Wikibase.DataValues
         }
 
         /// <summary>
-        /// Creates a new instance by parsing a JsonValue.
+        /// Creates a new instance by parsing a JToken.
         /// </summary>
-        /// <param name="value">JSonValue to parse.</param>
+        /// <param name="value">JToken to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="value"/> contains data which cannot be parsed.</exception>
-        internal EntityIdValue(JsonValue value)
+        internal EntityIdValue(JToken value)
         {
-            if ( value == null )
-                throw new ArgumentNullException("value");
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
-            JsonObject obj = value.asObject();
-            var entityTypeJson = obj.get(EntityTypeJsonName).asString();
+            if (value.Type != JTokenType.Object)
+                throw new ArgumentException("not a JSON object", nameof(value));
+
+            JObject obj = (JObject)value;
+            string entityTypeJson = (string)obj[EntityTypeJsonName];
             if ( !_entityTypeJsonNames.Any(x => x.Value == entityTypeJson) )
             {
-                throw new ArgumentException(String.Format("Json contained unknown entity type {0}", entityTypeJson));
+                throw new ArgumentException($"Json contained unknown entity type {entityTypeJson}");
             }
-            this.EntityType = _entityTypeJsonNames.First(x => x.Value == entityTypeJson).Key;
-            this.NumericId = obj.get(NumericIdJsonName).asInt();
+            EntityType = _entityTypeJsonNames.First(x => x.Value == entityTypeJson).Key;
+            NumericId = (int)obj[NumericIdJsonName];
         }
 
         /// <summary>
         /// Get the type of the data value.
         /// </summary>
         /// <returns>Data type identifier.</returns>
-        protected override String JsonName()
+        protected override string JsonName
         {
-            return TypeJsonName;
+            get { 
+                return TypeJsonName;
+            }
         }
 
         /// <summary>
         /// Encode the value part of the data value to json.
         /// </summary>
         /// <returns>The json value</returns>
-        internal override JsonValue Encode()
+        internal override JToken Encode()
         {
-            JToken j = new JObject(
-                new JProperty(EntityTypeJsonName, _entityTypeJsonNames[EntityType]), 
-                new JProperty(NumericIdJsonName, NumericId)
-                );
-            string output = j.ToString();
-            return JsonValue.readFrom(output);
+            JToken j = new JObject
+            {
+                { EntityTypeJsonName, _entityTypeJsonNames[EntityType] },
+                { NumericIdJsonName, NumericId }
+            };
+            return j;
         }
 
         /// <summary>
         /// Converts the instance to a string.
         /// </summary>
         /// <returns>String representation of the instance.</returns>
-        public override String ToString()
+        public override string ToString()
         {
             return EntityType + " " + NumericId;
         }
@@ -152,13 +156,13 @@ namespace Wikibase.DataValues
         public override bool Equals(object other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return false;
             }
@@ -179,13 +183,13 @@ namespace Wikibase.DataValues
         public bool Equals(EntityIdValue other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -208,8 +212,8 @@ namespace Wikibase.DataValues
                 const int Multiplier = 16777619;
 
                 int hashCode = Base;
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.EntityType) ? this.EntityType.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.NumericId) ? this.EntityType.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.EntityType) ? this.EntityType.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.NumericId) ? this.EntityType.GetHashCode() : 0);
                 return hashCode;
 
             }

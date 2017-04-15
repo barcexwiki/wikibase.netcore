@@ -28,7 +28,7 @@ namespace Wikibase
     /// </summary>
     public class EntityId
     {
-        private Dictionary<EntityType, String> _entityTypePrefixes = new Dictionary<EntityType, String>
+        private Dictionary<EntityType, string> _entityTypePrefixes = new Dictionary<EntityType, string>
         {
             {EntityType.Item, "q"},
             {EntityType.Property, "p"},
@@ -37,7 +37,7 @@ namespace Wikibase
         /// <summary>
         /// The allowed prefixes for entity ids
         /// </summary>
-        private static readonly String[] s_prefixes = new String[] { "q", "p" };
+        private static readonly string[] s_prefixes = new string[] { "q", "p" };
 
         /// <summary>
         /// Gets the entity type.
@@ -53,7 +53,7 @@ namespace Wikibase
         /// Gets the prefix.
         /// </summary>
         /// <value>The prefix.</value>
-        public String Prefix
+        public string Prefix
         {
             get
             {
@@ -69,7 +69,7 @@ namespace Wikibase
         /// Gets the numeric id.
         /// </summary>
         /// <value>The numeric id.</value>
-        public Int32 NumericId
+        public int NumericId
         {
             get;
             private set;
@@ -77,14 +77,14 @@ namespace Wikibase
 
         private static Regex s_prefixedIdRegex = new Regex(@"^(\w)(\d+)(#.*|)$");
 
-        private void SetPrefix(String prefix)
+        private void SetPrefix(string prefix)
         {
-            var prefixToFind = CultureInfo.InvariantCulture.TextInfo.ToLower(prefix);
+            string prefixToFind = CultureInfo.InvariantCulture.TextInfo.ToLower(prefix);
             if (!_entityTypePrefixes.Values.Contains(prefixToFind))
             {
-                throw new ArgumentException(String.Format("\"{0}\" is no recognized prefix", prefix));
+                throw new ArgumentException($"\"{prefix}\" is no recognized prefix");
             }
-            this.Type = _entityTypePrefixes.First(x => x.Value == prefixToFind).Key;
+            Type = _entityTypePrefixes.First(x => x.Value == prefixToFind).Key;
         }
 
         /// <summary>
@@ -92,36 +92,36 @@ namespace Wikibase
         /// </summary>
         /// <param name="prefix">The prefix</param>
         /// <param name="numericId">The numeric id</param>
-        public EntityId(String prefix, Int32 numericId)
+        public EntityId(string prefix, int numericId)
         {
-            this.Prefix = prefix;
-            this.NumericId = numericId;
+            Prefix = prefix;
+            NumericId = numericId;
         }
 
         /// <summary>
         /// Constructs an entity id from a prefixed id.
         /// </summary>
         /// <param name="prefixedId">The prefixed id.</param>
-        public EntityId(String prefixedId)
+        public EntityId(string prefixedId)
         {
-            Boolean success = false;
-            if (!String.IsNullOrWhiteSpace(prefixedId))
+            bool success = false;
+            if (!string.IsNullOrWhiteSpace(prefixedId))
             {
                 Match match = s_prefixedIdRegex.Match(CultureInfo.InvariantCulture.TextInfo.ToLower(prefixedId));
 
                 if (match.Success)
                 {
-                    if (Array.Exists(s_prefixes, delegate (String s)  { return s == match.Groups[1].Value; }))
+                    if (Array.Exists(s_prefixes, delegate (string s)  { return s == match.Groups[1].Value; }))
                     {
-                        this.NumericId = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-                        this.Prefix = match.Groups[1].Value;
+                        NumericId = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                        Prefix = match.Groups[1].Value;
                         success = true;
                     }
                 }
             }
             if (!success)
             {
-                throw new ArgumentException(String.Format("\"{0}\" is not a parseable prefixed id", prefixedId));
+                throw new ArgumentException($"\"{prefixedId}\" is not a parseable prefixed id");
             }
         }
 
@@ -129,7 +129,7 @@ namespace Wikibase
         /// Gets the prefixed id of the entity id.
         /// </summary>
         /// <value>The prefixed id.</value>
-        public String PrefixedId
+        public string PrefixedId
         {
             get
             {
@@ -143,7 +143,7 @@ namespace Wikibase
         ///</summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><c>true</c> if the current object is equal to the <paramref name="other"/> parameter; otherwise, <c>false</c>.</returns>
-        public override Boolean Equals(Object other)
+        public override bool Equals(object other)
         {
             if (this == other)
             {
@@ -165,7 +165,7 @@ namespace Wikibase
         /// Gets a hash code for the current object.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
-        public override Int32 GetHashCode()
+        public override int GetHashCode()
         {
             return (Type.GetHashCode() * 3) ^ (NumericId.GetHashCode() * 7);
         }
@@ -174,7 +174,7 @@ namespace Wikibase
         /// Converts a entity Id to a string.
         /// </summary>
         /// <returns>Entity Id as a string.</returns>
-        public override String ToString()
+        public override string ToString()
         {
             return PrefixedId;
         }

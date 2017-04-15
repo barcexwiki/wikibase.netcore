@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MinimalJson;
 using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
@@ -33,36 +32,36 @@ namespace Wikibase.DataValues
         /// <summary>
         /// The identifier of this data type in the serialized json object.
         /// </summary>
-        public const String TypeJsonName = "globecoordinate";
+        public const string TypeJsonName = "globecoordinate";
 
         /// <summary>
         /// The name of the <see cref="Latitude"/> property in the serialized json object.
         /// </summary>
-        private const String LatitudeJsonName = "latitude";
+        private const string LatitudeJsonName = "latitude";
 
         /// <summary>
         /// The name of the <see cref="Longitude"/> property in the serialized json object.
         /// </summary>
-        private const String LongitudeJsonName = "longitude";
+        private const string LongitudeJsonName = "longitude";
 
         /// <summary>
         /// The name of the deprecated altitude property in the serialized json object.
         /// </summary>
-        private const String AltitudeJsonName = "altitude";
+        private const string AltitudeJsonName = "altitude";
 
         /// <summary>
         /// The name of the <see cref="Precision"/> property in the serialized json object.
         /// </summary>
-        private const String PrecisionJsonName = "precision";
+        private const string PrecisionJsonName = "precision";
 
         /// <summary>
         /// The name of the <see cref="Globe"/> property in the serialized json object.
         /// </summary>
-        private const String GlobeJsonName = "globe";
+        private const string GlobeJsonName = "globe";
 
         #endregion Json names
 
-        private static Dictionary<Globe, String> s_globeJsonNames = new Dictionary<Globe, String>()
+        private static Dictionary<Globe, string> s_globeJsonNames = new Dictionary<Globe, string>()
         {
              {Globe.Earth, "http://www.wikidata.org/entity/Q2" }
         };
@@ -71,7 +70,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the latitude.
         /// </summary>
         /// <value>The latitude.</value>
-        public Double Latitude
+        public double Latitude
         {
             get;
             set;
@@ -81,7 +80,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the longitude.
         /// </summary>
         /// <value>The longitude.</value>
-        public Double Longitude
+        public double Longitude
         {
             get;
             set;
@@ -91,7 +90,7 @@ namespace Wikibase.DataValues
         /// Gets or sets the precision.
         /// </summary>
         /// <value>The precision.</value>
-        public Double Precision
+        public double Precision
         {
             get;
             set;
@@ -114,12 +113,12 @@ namespace Wikibase.DataValues
         /// <param name="longitude">The longitude.</param>
         /// <param name="precision">The precision.</param>
         /// <param name="globe">The globe on which the location resides.</param>
-        public GlobeCoordinateValue(Double latitude, Double longitude, Double precision, Globe globe)
+        public GlobeCoordinateValue(double latitude, double longitude, double precision, Globe globe)
         {
-            this.Latitude = latitude;
-            this.Longitude = longitude;
-            this.Precision = precision;
-            this.Globe = globe;
+            Latitude = latitude;
+            Longitude = longitude;
+            Precision = precision;
+            Globe = globe;
         }
 
         /// <summary>
@@ -127,24 +126,26 @@ namespace Wikibase.DataValues
         /// </summary>
         /// <param name="value"><see cref="JsonValue"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-        internal GlobeCoordinateValue(JsonValue value)
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not a JSON object.</exception>
+        internal GlobeCoordinateValue(JToken value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
-            JsonObject obj = value.asObject();
-            this.Latitude = obj.get(LatitudeJsonName).asDouble();
-            this.Longitude = obj.get(LongitudeJsonName).asDouble();
-            var altitude = obj.get(AltitudeJsonName);  // deprecated
-            JsonValue precisionReceived = obj.get(PrecisionJsonName);
-            if (precisionReceived != JsonValue.NULL)
+            if (value.Type != JTokenType.Object)
+                throw new ArgumentException("not a JSON object", nameof(value));
+
+            JObject obj = (JObject)value;
+            Latitude = (double)obj[LatitudeJsonName];
+            Longitude = (double)obj[LongitudeJsonName];
+            if (obj[PrecisionJsonName] != null)
             {
-                this.Precision = precisionReceived.asDouble();
+                Precision = (double)obj[PrecisionJsonName];
             }
-            var globe = obj.get(GlobeJsonName).asString();
+            string globe = (string)obj[GlobeJsonName];
             if (s_globeJsonNames.Any(x => x.Value == globe))
             {
-                this.Globe = s_globeJsonNames.First(x => x.Value == globe).Key;
+                Globe = s_globeJsonNames.First(x => x.Value == globe).Key;
             }
             else
             {
@@ -156,9 +157,12 @@ namespace Wikibase.DataValues
         /// Gets the type identifier of the type at server side.
         /// </summary>
         /// <returns>The type identifier.</returns>
-        protected override String JsonName()
+        protected override string JsonName
         {
-            return TypeJsonName;
+            get
+            {
+                return TypeJsonName;
+            }
         }
 
         /// <summary>
@@ -166,23 +170,21 @@ namespace Wikibase.DataValues
         /// </summary>
         /// <returns>Encoded class.</returns>
         /// <exception cref="InvalidOperationException"><see cref="GlobeCoordinateValue.Globe"/> is <see cref="Wikibase.DataValues.Globe.Unknown"/>.</exception>
-        internal override JsonValue Encode()
+        internal override JToken Encode()
         {
             if (Globe == Globe.Unknown)
             {
                 throw new InvalidOperationException("Globe value not set.");
             }
 
-            JToken j = new JObject(
-                            new JProperty(LatitudeJsonName, Latitude),
-                            new JProperty(LongitudeJsonName, Longitude),
-                            // new JProperty(AltitudeJsonName, altitude.ToString()),
-                            new JProperty(PrecisionJsonName, Precision),
-                            new JProperty(GlobeJsonName, s_globeJsonNames[Globe])
-                           );
-            string output = j.ToString();
-            return JsonValue.readFrom(output);
-
+            JToken j = new JObject
+            {
+                { LatitudeJsonName, Latitude },
+                { LongitudeJsonName, Longitude },
+                { PrecisionJsonName, Precision },
+                { GlobeJsonName, s_globeJsonNames[Globe] }
+            };
+            return j;
         }
 
 
@@ -208,13 +210,13 @@ namespace Wikibase.DataValues
         public override bool Equals(object other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return false;
             }
@@ -235,13 +237,13 @@ namespace Wikibase.DataValues
         public bool Equals(GlobeCoordinateValue other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -262,10 +264,10 @@ namespace Wikibase.DataValues
                 const int Multiplier = 16777619;
 
                 int hashCode = Base;
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Globe) ? this.Globe.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Precision) ? this.Precision.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Longitude) ? this.Longitude.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Longitude) ? this.Latitude.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Globe) ? this.Globe.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Precision) ? this.Precision.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Longitude) ? this.Longitude.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Longitude) ? this.Latitude.GetHashCode() : 0);
                 return hashCode;
             }
         }

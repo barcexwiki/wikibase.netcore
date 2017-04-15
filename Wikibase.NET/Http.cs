@@ -16,7 +16,7 @@ namespace Wikibase
         /// Gets or sets the user agent.
         /// </summary>
         /// <value>The user agent.</value>
-        public String UserAgent
+        public string UserAgent
         {
             get;
             set;
@@ -28,7 +28,7 @@ namespace Wikibase
         /// Constructor
         /// </summary>
         /// <param name="userAgent">The user agent</param>
-        public Http(String userAgent)
+        public Http(string userAgent)
         {
             this.UserAgent = userAgent;
         }
@@ -38,7 +38,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="url">The url</param>
         /// <returns>The response</returns>
-        public String Get(String url)
+        public string Get(string url)
         {
             return this.Post(url, null);
         }
@@ -49,7 +49,7 @@ namespace Wikibase
         /// <param name="url">The url.</param>
         /// <param name="postFields">The post fields.</param>
         /// <returns>The response.</returns>
-        public String Post(String url, Dictionary<String, String> postFields)
+        public string Post(string url, Dictionary<string, string> postFields)
         {
             using (var _handler = new HttpClientHandler() { CookieContainer = _cookies })
             using (HttpClient _client = new HttpClient(_handler))
@@ -78,17 +78,17 @@ namespace Wikibase
         /// <param name="fields">The fields.</param>
         /// <returns>The query string.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fields"/> is <c>null</c>.</exception>
-        public String BuildQuery(Dictionary<String, String> fields)
+        public string BuildQuery(Dictionary<string, string> fields)
         {
             if (fields == null)
-                throw new ArgumentNullException("fields");
+                throw new ArgumentNullException(nameof(fields));
 
-            String query = String.Empty;
-            foreach (KeyValuePair<String, String> field in fields)
+            string query = string.Empty;
+            foreach (KeyValuePair<string, string> field in fields)
             {
                 query += System.Uri.EscapeDataString(field.Key) + "=" + System.Uri.EscapeDataString(field.Value) + "&";
             }
-            if (!String.IsNullOrEmpty(query))
+            if (!string.IsNullOrEmpty(query))
             {
                 query = query.Remove(query.Length - 1);
             }

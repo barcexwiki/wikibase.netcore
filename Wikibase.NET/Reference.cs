@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using MinimalJson;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -21,13 +21,13 @@ namespace Wikibase
         /// Gets the hash.
         /// </summary>
         /// <value>The hash.</value>
-        public String Hash { get; private set; }
+        public string Hash { get; private set; }
 
         /// <summary>
         /// Gets the internal id.
         /// </summary>
         /// <value>The internal id.</value>
-        public String InternalId { get; private set; }
+        public string InternalId { get; private set; }
 
         /// <summary>
         /// Gets the collection of snaks assigned to the reference.
@@ -46,60 +46,60 @@ namespace Wikibase
         /// Creates a new reference by parsing the JSon result.
         /// </summary>
         /// <param name="statement">Statement to which the new reference belongs.</param>
-        /// <param name="data">JsonObject to parse.</param>
-        internal Reference(Statement statement, JsonObject data)
+        /// <param name="data">JToken to parse.</param>
+        internal Reference(Statement statement, JToken data)
         {
-            this.Statement = statement;
-            this.FillData(data);
+            Statement = statement;
+            FillData(data);
         }
 
         /// <summary>
         /// Parses the <paramref name="data"/> and adds the results to this instance.
         /// </summary>
-        /// <param name="data"><see cref="JsonObject"/> to parse.</param>
+        /// <param name="data"><see cref="JToken"/> to parse.</param>
         /// <exception cref="ArgumentNullException"><paramref name="data"/> is <c>null</c>.</exception>
-        protected void FillData(JsonObject data)
+        protected void FillData(JToken data)
         {
+            
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
-            if (data.get("snaks") != null)
+            if (data["snaks"] != null)
             {
-                foreach (JsonObject.Member member in data.get("snaks").asObject())
+                foreach (JProperty member in data["snaks"])
                 {
-                    foreach (JsonValue value in member.value.asArray())
+                    foreach (JToken s in member.Value)
                     {
-                        Snak snak = new Snak(value.asObject());
+                        Snak snak = new Snak(s);
                         _snaks.Add(snak);
                     }
                 }
             }
 
-            var snaksOrderSection = data.get("snaks-order");
-            if (snaksOrderSection != null && snaksOrderSection.isArray())
+            JToken snaksOrderSection2 = data["snaks-order"];
+            if (snaksOrderSection2 != null && snaksOrderSection2.Type == JTokenType.Array)
             {
                 _snaksOrder.Clear();
-                var snaksOrderArray = snaksOrderSection.asArray();
 
-                foreach (var property in snaksOrderArray.getValues())
+                foreach (JToken property in snaksOrderSection2)
                 {
-                    _snaksOrder.Add(new EntityId(property.asString()));
+                    _snaksOrder.Add(new EntityId((string)property));
                 }
             }
 
-            if (data.get("hash") != null)
+            if (data["hash"] != null)
             {
-                this.Hash = data.get("hash").asString();
+                Hash = (string)data["hash"];
             }
-            if (this.InternalId == null)
+            if (InternalId == null)
             {
-                if (this.Hash != null)
+                if (Hash != null)
                 {
-                    this.InternalId = this.Hash;
+                    InternalId = Hash;
                 }
                 else
                 {
-                    this.InternalId = "" + Environment.TickCount + this.Statement.Id;
+                    InternalId = "" + Environment.TickCount + Statement.Id;
                 }
             }
         }
@@ -115,18 +115,18 @@ namespace Wikibase
         internal Reference(Statement statement, IEnumerable<Snak> snaks)
         {
             if (snaks == null)
-                throw new ArgumentNullException("snaks");
-            if (statement == null)
-                throw new ArgumentNullException("statement");
-            if (!snaks.Any())
-                throw new ArgumentException("snaks");
+                throw new ArgumentNullException(nameof(snaks));
 
-            this.Statement = statement;
+            if (!snaks.Any())
+                throw new ArgumentException("no snaks",nameof(snaks));
+
+            Statement = statement ?? throw new ArgumentNullException(nameof(statement));
+
             foreach (Snak snak in snaks)
             {
                 AddSnak(snak);
             }
-            this.InternalId = Environment.TickCount + this.Statement.Id;
+            InternalId = Environment.TickCount + Statement.Id;
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="property">The property.</param>
         /// <returns>The snaks.</returns>
-        public Snak[] GetSnaks(String property)
+        public Snak[] GetSnaks(string property)
         {
             var snakList = from s in _snaks
                            where s.PropertyId.PrefixedId.ToUpper() == property.ToUpper()
@@ -152,7 +152,7 @@ namespace Wikibase
         public void AddSnak(Snak snak)
         {
             if (snak == null)
-                throw new ArgumentNullException("snak");
+                throw new ArgumentNullException(nameof(snak));
 
             _snaks.Add(snak);
 
@@ -164,7 +164,7 @@ namespace Wikibase
 
         private void Touch()
         {
-            this.Statement.Touch();
+            Statement.Touch();
         }
 
 
@@ -177,7 +177,7 @@ namespace Wikibase
         public void RemoveSnak(Snak snak)
         {
             if (snak == null)
-                throw new ArgumentNullException("snak");
+                throw new ArgumentNullException(nameof(snak));
 
             _snaks.Remove(snak);
             if (!_snaks.Where(x => x.PropertyId == snak.PropertyId).Any())
@@ -191,57 +191,57 @@ namespace Wikibase
         /// Updates instance from API call result.
         /// </summary>
         /// <param name="result">Json result.</param>
-        protected void UpdateDataFromResult(JsonObject result)
+        protected void UpdateDataFromResult(JToken result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
-            if (result.get("reference") != null)
+            if (result["reference"] != null)
             {
-                this.FillData(result.get("reference").asObject());
+                FillData(result["reference"]);
             }
-            this.Statement.Entity.UpdateLastRevisionIdFromResult(result);
+            Statement.Entity.UpdateLastRevisionIdFromResult(result);
         }
 
 
         /// <summary>
-        /// Encodes this referecne in a JsonObject
+        /// Encodes this referecne in a JToken
         /// </summary>
-        /// <returns>a JsonObject with the reference encoded.</returns>
-        internal virtual JsonObject Encode()
+        /// <returns>a JToken with the reference encoded.</returns>
+        internal virtual JToken Encode()
         {
-            JsonObject encoded = new JsonObject();
+            JObject encoded = new JObject();
 
-            var snaksSection = new JsonObject();
+            JObject snaksSection = new JObject();
 
             foreach (EntityId property in _snaksOrder)
             {
-                var snaksForTheProperty = GetSnaks(property.PrefixedId);
+                Snak[] snaksForTheProperty = GetSnaks(property.PrefixedId);
 
                 if (snaksForTheProperty.Any())
                 {
-                    var arrayOfSnaks = new JsonArray();
+                    var arrayOfSnaks = new JArray();
 
                     foreach (Snak s in snaksForTheProperty)
                     {
-                        arrayOfSnaks.add(s.Encode());
+                        arrayOfSnaks.Add(s.Encode());
                     }
 
-                    snaksSection.add(property.PrefixedId.ToUpper(), arrayOfSnaks);
+                    snaksSection.Add(property.PrefixedId.ToUpper(), arrayOfSnaks);
                 }
             }
 
-            JsonArray snaksOrderSection = new JsonArray();
+            JArray snaksOrderSection = new JArray();
             foreach (EntityId property in _snaksOrder)
             {
-                snaksOrderSection.add(property.PrefixedId.ToUpper());
+                snaksOrderSection.Add(property.PrefixedId.ToUpper());
             }
 
-            encoded.add("snaks", snaksSection);
-            encoded.add("snaks-order", snaksOrderSection);
+            encoded.Add("snaks", snaksSection);
+            encoded.Add("snaks-order", snaksOrderSection);
 
             if (Hash != null)
-                encoded.add("hash", Hash);
+                encoded.Add("hash", Hash);
 
             return encoded;
         }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using MinimalJson;
 using Newtonsoft.Json.Linq;
 
 namespace Wikibase.DataValues
@@ -33,27 +32,27 @@ namespace Wikibase.DataValues
         /// <summary>
         /// The identifier of this data type in the serialized json object.
         /// </summary>
-        public const String TypeJsonName = "quantity";
+        public const string TypeJsonName = "quantity";
 
         /// <summary>
         /// The name of the <see cref="UpperBound"/> property in the serialized json object.
         /// </summary>
-        private const String UpperBoundJsonName = "upperBound";
+        private const string UpperBoundJsonName = "upperBound";
 
         /// <summary>
         /// The name of the <see cref="LowerBound"/> property in the serialized json object.
         /// </summary>
-        private const String LowerBoundJsonName = "lowerBound";
+        private const string LowerBoundJsonName = "lowerBound";
 
         /// <summary>
         /// The name of the <see cref="Amount"/> property in the serialized json object.
         /// </summary>
-        private const String AmountJsonName = "amount";
+        private const string AmountJsonName = "amount";
 
         /// <summary>
         /// The name of the <see cref="Unit"/> property in the serialized json object.
         /// </summary>
-        private const String UnitJsonName = "unit";
+        private const string UnitJsonName = "unit";
 
         #endregion Jscon names
 
@@ -118,7 +117,7 @@ namespace Wikibase.DataValues
         /// Creates a new quantity value for a exact integer value.
         /// </summary>
         /// <param name="value">Integer value.</param>
-        public QuantityValue(Int64 value)
+        public QuantityValue(long value)
         {
             Amount = value;
             UpperBound = Amount;
@@ -131,57 +130,70 @@ namespace Wikibase.DataValues
         /// </summary>
         /// <param name="value"><see cref="JsonValue"/> to be parsed.</param>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-        internal QuantityValue(JsonValue value)
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not a JSON object.</exception>
+        internal QuantityValue(JToken value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
-            JsonObject obj = value.asObject();
-            this.Amount = Decimal.Parse(obj.get(AmountJsonName).asString(), CultureInfo.InvariantCulture);
-            this.Unit = obj.get(UnitJsonName).asString();
-            if (obj.get(UpperBoundJsonName) != null)
+            if (value.Type != JTokenType.Object)
+                throw new ArgumentException("not a JSON object", nameof(value));
+
+            JObject obj = (JObject)value;
+
+            Amount = decimal.Parse((string)obj[AmountJsonName], CultureInfo.InvariantCulture);
+            Unit = (string)obj[UnitJsonName];
+
+            if (obj[UpperBoundJsonName] != null)
             {
-                this.UpperBound = Decimal.Parse(obj.get(UpperBoundJsonName).asString(), CultureInfo.InvariantCulture);
+                this.UpperBound = decimal.Parse((string)obj[UpperBoundJsonName], CultureInfo.InvariantCulture);
             }
             else
             {
                 this.UpperBound = null;
             }
                 
-            if (obj.get(LowerBoundJsonName) != null)
+            if (obj[LowerBoundJsonName] != null)
             {
-                this.LowerBound = Decimal.Parse(obj.get(LowerBoundJsonName).asString(), CultureInfo.InvariantCulture);
+                this.LowerBound = decimal.Parse((string)obj[LowerBoundJsonName], CultureInfo.InvariantCulture);
             }
             else
             {
                 this.LowerBound = null;
-            }
-            
+            }            
         }
 
         /// <summary>
         /// Gets the data type identifier.
         /// </summary>
         /// <returns>Data type identifier.</returns>
-        protected override String JsonName()
+        protected override string JsonName
         {
-            return TypeJsonName;
+            get
+            {
+                return TypeJsonName;
+            }
         }
 
         /// <summary>
         /// Encodes the instance in a <see cref="JsonValue"/>.
         /// </summary>
         /// <returns>Encoded instance.</returns>
-        internal override JsonValue Encode()
+        internal override JToken Encode()
         {
-            JToken j = new JObject(
-                new JProperty(AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture)),
-                new JProperty(UnitJsonName, Unit),
-                new JProperty(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.Value.ToString(CultureInfo.InvariantCulture)),
-                new JProperty(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.Value.ToString(CultureInfo.InvariantCulture))
-            );
-            string output = j.ToString();
-            return JsonValue.readFrom(output);
+            JObject j = new JObject
+            {
+                { AmountJsonName, (Amount >= 0 ? "+" : "") + Amount.ToString(CultureInfo.InvariantCulture) },
+                { UnitJsonName, Unit }
+            };
+
+            if (UpperBound != null)
+                j.Add(new JProperty(UpperBoundJsonName, (UpperBound >= 0 ? "+" : "") + UpperBound.Value.ToString(CultureInfo.InvariantCulture)));
+
+            if (LowerBound != null)
+                j.Add(new JProperty(LowerBoundJsonName, (LowerBound >= 0 ? "+" : "") + LowerBound.Value.ToString(CultureInfo.InvariantCulture)));
+
+            return j;
         }
 
 
@@ -207,13 +219,13 @@ namespace Wikibase.DataValues
         public override bool Equals(object other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return false;
             }
@@ -234,13 +246,13 @@ namespace Wikibase.DataValues
         public bool Equals(QuantityValue other)
         {
             // Is null?
-            if (Object.ReferenceEquals(null, other))
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }
 
             // Is the same object?
-            if (Object.ReferenceEquals(this, other))
+            if (object.ReferenceEquals(this, other))
             {
                 return true;
             }
@@ -261,10 +273,10 @@ namespace Wikibase.DataValues
                 const int Multiplier = 16777619;
 
                 int hashCode = Base;
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Amount) ? this.Amount.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.LowerBound) ? this.LowerBound.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.UpperBound) ? this.UpperBound.GetHashCode() : 0);
-                hashCode = (hashCode * Multiplier) ^ (!Object.ReferenceEquals(null, this.Unit) ? this.Unit.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Amount) ? this.Amount.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.LowerBound) ? this.LowerBound.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.UpperBound) ? this.UpperBound.GetHashCode() : 0);
+                hashCode = (hashCode * Multiplier) ^ (!object.ReferenceEquals(null, this.Unit) ? this.Unit.GetHashCode() : 0);
                 return hashCode;
             }
         }

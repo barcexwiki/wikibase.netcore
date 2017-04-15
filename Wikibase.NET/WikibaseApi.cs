@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Threading;
-using MinimalJson;
 using Wikibase.DataValues;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace Wikibase
 {
@@ -19,7 +19,7 @@ namespace Wikibase
         /// Constructor
         /// </summary>
         /// <param name="apiUrl">The base url of the wiki like "https://www.wikidata.org"</param>
-        public WikibaseApi(String apiUrl)
+        public WikibaseApi(string apiUrl)
             : base(apiUrl)
         {
         }
@@ -29,7 +29,7 @@ namespace Wikibase
         /// </summary>
         /// <param name="apiUrl">The API URL of the wiki like "https://www.wikidata.org/w/api.php"</param>
         /// <param name="userAgent">The user agent</param>
-        public WikibaseApi(String apiUrl, String userAgent)
+        public WikibaseApi(string apiUrl, string userAgent)
             : base(apiUrl, userAgent)
         {
         }
@@ -40,30 +40,30 @@ namespace Wikibase
         /// <param name="ids">The ids</param>
         /// <param name="languages">The languages</param>
         /// <returns>The list of entities</returns>
-        internal Entity[] GetEntitiesFromIds(String[] ids, String[] languages)
+        internal Entity[] GetEntitiesFromIds(string[] ids, string[] languages)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbgetentities" },
-                { "ids", String.Join("|", ids ) }
+                { "ids", string.Join("|", ids ) }
             };
             if (languages != null)
             {
-                parameters["languages"] = String.Join("|", languages);
+                parameters["languages"] = string.Join("|", languages);
             }
-            JsonObject result = this.Get(parameters);
+            JToken result = Get(parameters);
             return ParseGetEntitiesApiResponse(result);
         }
 
-        internal JsonObject GetEntityJsonFromId(EntityId id)
+        internal JToken GetEntityJsonFromId(EntityId id)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbgetentities" },
                 { "ids", id.PrefixedId }
             };
-            JsonObject result = this.Get(parameters);
-            return result.get("entities").asObject();
+            JToken result = this.Get(parameters);
+            return result["entities"];
         }
 
         /// <summary>
@@ -73,19 +73,19 @@ namespace Wikibase
         /// <param name="titles">The titles</param>
         /// <param name="languages">The languages</param>
         /// <returns>The list of entities</returns>
-        internal Entity[] GetEntitesFromSitelinks(String[] sites, String[] titles, String[] languages)
+        internal Entity[] GetEntitesFromSitelinks(string[] sites, string[] titles, string[] languages)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbgetentities" },
-                { "sites", String.Join("|", sites ) },
-                { "titles", String.Join("|", titles ) }
+                { "sites", string.Join("|", sites ) },
+                { "titles", string.Join("|", titles ) }
             };
             if (languages != null)
             {
-                parameters["languages"] = String.Join("|", languages);
+                parameters["languages"] = string.Join("|", languages);
             }
-            JsonObject result = this.Get(parameters);
+            JToken result = Get(parameters);
             return ParseGetEntitiesApiResponse(result);
         }
 
@@ -95,19 +95,19 @@ namespace Wikibase
         /// <param name="result">The result of the api request</param>
         /// <returns>The list of entities</returns>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is <c>null</c>.</exception>
-        protected Entity[] ParseGetEntitiesApiResponse(JsonObject result)
+        protected Entity[] ParseGetEntitiesApiResponse(JToken result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
             List<Entity> entities = new List<Entity>();
-            if (result.get("entities") != null)
+            if (result["entities"] != null)
             {
-                foreach (JsonObject.Member member in result.get("entities").asObject())
+                foreach (JProperty member in result["entities"])
                 {
-                    if (member.value.asObject().get("missing") == null)
+                    if (member.Value["missing"] == null)
                     {
-                        entities.Add(Entity.NewFromArray(this, member.value.asObject()));
+                        entities.Add(Entity.NewFromArray(this, member.Value));
                     }
                 }
             }
@@ -122,13 +122,13 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject EditEntity(String id, JsonObject data, Int32 baseRevisionId, String summary)
+        internal JToken EditEntity(string id, JToken data, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbeditentity" }
             };
-            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            Dictionary<string, string> postFields = new Dictionary<string, string>()
             {
                 { "data", data.ToString() },
                 { "id", id }
@@ -143,13 +143,13 @@ namespace Wikibase
         /// <param name="summary">The summary for the change</param>
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <returns>The returned json object from the server.</returns>
-        internal void DeleteEntity(String title, Int32 baseRevisionId, String summary)
+        internal void DeleteEntity(string title, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "delete" }
             };
-            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            Dictionary<string, string> postFields = new Dictionary<string, string>()
             {
                 { "title", title }
             };
@@ -164,13 +164,13 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject CreateEntity(String type, JsonObject data, Int32 baseRevisionId, String summary)
+        internal JToken CreateEntity(string type, JToken data, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbeditentity" }
             };
-            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            Dictionary<string, string> postFields = new Dictionary<string, string>()
             {
                 { "data", data.ToString() },
                 { "new", type }
@@ -188,9 +188,9 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject CreateClaim(String entity, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
+        internal JToken CreateClaim(string entity, string snakType, string property, DataValue value, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbcreateclaim" },
                 { "entity", entity },
@@ -201,7 +201,7 @@ namespace Wikibase
             {
                 parameters["value"] = value.Encode().ToString();
             }
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -211,13 +211,13 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject SetClaim(String claim, Int32 baseRevisionId, String summary)
+        internal JToken SetClaim(string claim, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbsetclaim" }
             };
-            Dictionary<String, String> postFields = new Dictionary<String, String>()
+            Dictionary<string, string> postFields = new Dictionary<string, string>()
             {
                 { "claim", claim }
             };
@@ -234,9 +234,9 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject SetClaimValue(String claim, String snakType, DataValue value, Int32 baseRevisionId, String summary)
+        internal JToken SetClaimValue(string claim, string snakType, DataValue value, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbsetclaimvalue" },
                 { "claim", claim },
@@ -246,7 +246,7 @@ namespace Wikibase
             {
                 parameters["value"] = value.Encode().ToString();
             }
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -256,14 +256,14 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject RemoveClaims(String[] claims, Int32 baseRevisionId, String summary)
+        internal JToken RemoveClaims(string[] claims, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbremoveclaims" },
                 { "claim", string.Join("|", claims) }
             };
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -275,9 +275,9 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject SetReference(String statement, JsonObject snaks, String reference, Int32 baseRevisionId, String summary)
+        internal JToken SetReference(string statement, JToken snaks, string reference, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbsetreference" },
                 { "statement", statement },
@@ -287,7 +287,7 @@ namespace Wikibase
             {
                 parameters["reference"] = reference;
             }
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -298,15 +298,15 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on</param>
         /// <param name="summary">The summary for the change</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject RemoveReferences(String statement, String[] references, Int32 baseRevisionId, String summary)
+        internal JToken RemoveReferences(string statement, string[] references, int baseRevisionId, string summary)
         {
-            Dictionary<string, string> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbremovereferences" },
                 { "statement", statement },
                 { "references", string.Join("|", references) }
             };
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -319,9 +319,9 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject SetQualifier(String statement, String snakType, String property, DataValue value, Int32 baseRevisionId, String summary)
+        internal JToken SetQualifier(string statement, string snakType, string property, DataValue value, int baseRevisionId, string summary)
         {
-            Dictionary<String, String> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbsetqualifier" },
                 { "claim", statement },
@@ -333,7 +333,7 @@ namespace Wikibase
                 parameters["value"] = value.Encode().ToString();
             }
 
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -344,15 +344,15 @@ namespace Wikibase
         /// <param name="baseRevisionId">The numeric identifier for the revision to base the modification on.</param>
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
-        internal JsonObject RemoveQualifier(String statement, String[] qualifiers, Int32 baseRevisionId, String summary)
+        internal JToken RemoveQualifier(string statement, string[] qualifiers, int baseRevisionId, string summary)
         {
-            Dictionary<string, string> parameters = new Dictionary<String, String>()
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "action", "wbremovequalifiers" },
                 { "statement", statement },
                 { "qualifiers", string.Join("|", qualifiers) }
             };
-            return this.EditAction(parameters, new Dictionary<String, String>(), baseRevisionId, summary);
+            return this.EditAction(parameters, new Dictionary<string, string>(), baseRevisionId, summary);
         }
 
         /// <summary>
@@ -364,12 +364,12 @@ namespace Wikibase
         /// <param name="summary">The summary for the change.</param>
         /// <returns>The returned json object from the server.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="parameters"/> or <paramref name="postFields"/> is <c>null</c>.</exception>
-        private JsonObject EditAction(Dictionary<String, String> parameters, Dictionary<String, String> postFields, Int32 baseRevisionId, String summary)
+        private JToken EditAction(Dictionary<string, string> parameters, Dictionary<string, string> postFields, int baseRevisionId, string summary)
         {
             if (parameters == null)
-                throw new ArgumentNullException("parameters");
+                throw new ArgumentNullException(nameof(parameters));
             if (postFields == null)
-                throw new ArgumentNullException("postFields");
+                throw new ArgumentNullException(nameof(postFields));
 
             postFields["token"] = this.GetEditToken();
             if (baseRevisionId != 0)
@@ -385,10 +385,10 @@ namespace Wikibase
                 parameters["bot"] = true.ToString();
             }
             // limit number of edits
-            Int32 time = Environment.TickCount;
+            int time = Environment.TickCount;
             if (this.LastEditTimestamp > 0 && (time - this.LastEditTimestamp) < this.EditLaps)
             {
-                Int32 wait = this.LastEditTimestamp + this.EditLaps - time;
+                int wait = this.LastEditTimestamp + this.EditLaps - time;
                 Console.WriteLine("Wait for {0} seconds...", wait / 1000);
                 Task.Delay(wait).Wait();
             }
