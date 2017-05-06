@@ -117,41 +117,110 @@ namespace Wikibase.DataValues
     {
         private struct ParsedTime
         {
-            public long year;
-            public int month;
-            public int day;
-            public int hour;
-            public int minute;
-            public int second;
+
+            public long Year
+            {
+                get { return _year; }
+                set
+                {
+                    if (value < -99999999999 || value > 99999999999)
+                        throw new ArgumentException("Invalid year");
+                    _year = value;
+                }
+            }
+
+            public int Month
+            {
+                get { return _month; }
+                set
+                {
+                    if (value < 0 || value > 12)
+                        throw new ArgumentException("Invalid month");
+                    _month = value;
+                }
+            }
+
+            public int Day
+            {
+                get { return _day; }
+                set
+                {
+                    if (value < 0 || value > 31)
+                        throw new ArgumentException("Invalid day");
+                    _day = value;
+                }
+            }
+
+
+            public int Hour
+            {
+                get { return _hour; }
+                set
+                {
+                    if (value < 0 || value > 24)
+                        throw new ArgumentException("Invalid hour");
+                    _hour = value;
+                }
+            }
+
+            public int Minute
+            {
+                get { return _minute; }
+                set
+                {
+                    if (value < 0 || value > 60)
+                        throw new ArgumentException("Invalid minute");
+                    _minute = value;
+                }
+            }
+
+            public int Second
+            {
+                get { return _second; }
+                set
+                {
+                    if (value < 0 || value > 60)
+                        throw new ArgumentException("Invalid second");
+                    _second = value;
+                }
+            }
+
+
+            private long _year;
+            private int _month;
+            private int _day;
+            private int _hour;
+            private int _minute;
+            private int _second;
 
             public ParsedTime(string time)
             {
                 bool valid = false;
-                year = 0;
-                month = 0;
-                day = 0;
-                hour = 0;
-                minute = 0;
-                second = 0;
+                _year = 0;
+                _month = 0;
+                _day = 0;
+                _hour = 0;
+                _minute = 0;
+                _second = 0;
 
                 Match m = Regex.Match(time, "^(?<year>[+-]\\d{4,11})-(?<month>\\d{2})-(?<day>\\d{2})T(?<hour>\\d{2}):(?<minute>\\d{2}):(?<second>\\d{2})Z$");
 
                 if (m.Success)
                 {
-                    year = long.Parse(m.Groups["year"].Value);
-                    day = int.Parse(m.Groups["day"].Value);
-                    month = int.Parse(m.Groups["month"].Value);
-                    hour = int.Parse(m.Groups["hour"].Value);
-                    minute = int.Parse(m.Groups["minute"].Value);
-                    second = int.Parse(m.Groups["second"].Value);
+                    _year = long.Parse(m.Groups["year"].Value);
+                    _day = int.Parse(m.Groups["day"].Value);
+                    _month = int.Parse(m.Groups["month"].Value);
+                    _hour = int.Parse(m.Groups["hour"].Value);
+                    _minute = int.Parse(m.Groups["minute"].Value);
+                    _second = int.Parse(m.Groups["second"].Value);
                     valid = (
-                                day <= 31 &&
-                                month <= 12 &&
-                                hour <= 60 &&
-                                minute <= 60 &&
-                                second <= 30 &&
-                                year <= 99999999999 &&
-                                year >= -99999999999
+                                _day <= 31 &&
+                                _month <= 12 &&
+                                _hour <= 60 &&
+                                _minute <= 60 &&
+                                _second <= 30 &&
+                                _year <= 99999999999 &&
+                                _year >= -99999999999
                             );
                 }
 
@@ -161,8 +230,8 @@ namespace Wikibase.DataValues
 
             public override string ToString()
             {
-                string result = string.Format("{0:0000}-{1:00}-{2:00}T{3:00}:{4:00}:{5:00}Z", year, month, day, hour, minute, second);
-                if (year >= 0) result = "+" + result;
+                string result = string.Format("{0:0000}-{1:00}-{2:00}T{3:00}:{4:00}:{5:00}Z", _year, _month, _day, _hour, _minute, _second);
+                if (_year >= 0) result = "+" + result;
                 return result;
             }
         }
@@ -278,6 +347,103 @@ namespace Wikibase.DataValues
                 }
             }
         }
+
+        /// <summary>
+        /// Day
+        /// The day mumber of the TimeValue
+        /// </summary>
+        public int Day
+        {
+            get
+            {
+                return _time.Day;
+            }
+            set
+            {
+                _time.Day = value;
+            }
+        }
+
+        /// <summary>
+        /// Month
+        /// The month mumber of the TimeValue
+        /// </summary>
+        public int Month
+        {
+            get
+            {
+                return _time.Month;
+            }
+            set
+            {
+                _time.Month = value;
+            }
+        }
+
+        /// <summary>
+        /// Year
+        /// The year mumber of the TimeValue
+        /// </summary>
+        public long Year
+        {
+            get
+            {
+                return _time.Year;
+            }
+            set
+            {
+                _time.Year = value;
+            }
+        }
+
+        /// <summary>
+        /// Hour
+        /// The hour mumber of the TimeValue
+        /// </summary>
+        public int Hour
+        {
+            get
+            {
+                return _time.Hour;
+            }
+            set
+            {
+                _time.Hour = value;
+            }
+        }
+
+        /// <summary>
+        /// Minute
+        /// The hour minute of the TimeValue
+        /// </summary>
+        public int Minute
+        {
+            get
+            {
+                return _time.Minute;
+            }
+            set
+            {
+                _time.Minute = value;
+            }
+        }
+
+        /// <summary>
+        /// Second
+        /// The second mumber of the TimeValue
+        /// </summary>
+        public int Second
+        {
+            get
+            {
+                return _time.Second;
+            }
+            set
+            {
+                _time.Second = value;
+            }
+        }
+
 
         /// <summary>
         /// Timezone information as an offset from UTC in minutes.
