@@ -138,7 +138,7 @@ namespace Wikibase.DataValues
             JObject obj = (JObject)value;
             Latitude = (double)obj[LatitudeJsonName];
             Longitude = (double)obj[LongitudeJsonName];
-            if (obj[PrecisionJsonName] != null)
+            if (obj[PrecisionJsonName] != null && obj[PrecisionJsonName].Type != JTokenType.Null)
             {
                 Precision = (double)obj[PrecisionJsonName];
             }
