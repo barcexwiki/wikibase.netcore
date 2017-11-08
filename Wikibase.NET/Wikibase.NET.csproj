@@ -4,7 +4,6 @@
     <TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
     <AssemblyName>Wikibase.NET</AssemblyName>
     <PackageId>Wikibase.NET</PackageId>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
