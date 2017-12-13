@@ -10,6 +10,12 @@ namespace Wikibase
     /// </summary>
     public class Property : Entity
     {
+
+           /// <summary>
+        /// The name of the <see cref="DataType"/> property in the serialized json object.
+        /// </summary>
+        private const string DataTypeJsonName = "datatype";
+
         /// <summary>
         /// The data type
         /// </summary>
@@ -23,9 +29,10 @@ namespace Wikibase
         /// Constructor creating a blank property.
         /// </summary>
         /// <param name="api">The api</param>
-        public Property(WikibaseApi api)
+        public Property(WikibaseApi api, string dataType)
             : base(api)
         {
+            DataType = dataType;
         }
 
         /// <summary>
@@ -62,6 +69,27 @@ namespace Wikibase
         protected override string GetEntityType()
         {
             return "property";
+        }
+
+
+        
+        /// <summary>
+        /// Save all changes.
+        /// </summary>
+        /// <param name="summary">The edit summary.</param>
+        public override void Save(string summary)
+        {
+            EntityStatus currentStatus = Status;
+            switch (currentStatus)
+            {
+                case EntityStatus.New:
+                    this.changes[DataTypeJsonName] = new JValue(DataType);
+                    break;
+            }
+
+            base.Save(summary);
+
+            // Clears the dirty sets
         }
     }
 }
