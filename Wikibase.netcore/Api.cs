@@ -11,7 +11,7 @@ namespace Wikibase
     /// </summary>
     public class Api
     {
-        private const string ApiName = "Wikibase.NET";
+        private const string ApiName = "Wikibase.netcore";
         private const string ApiVersion = "0.1";
 
         private Http _http;

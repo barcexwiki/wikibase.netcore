@@ -1,10 +1,11 @@
-wikibase.net
+wikibase.netcore
 ============
 
-wikibase.net is an api for the MediaWiki Wikibase extension based on 
-.NET Framework 4.5 / .net core. For more information about Wikibase see https://www.mediawiki.org/wiki/Wikibase. Wikibase is the software [Wikidata](https://www.wikidata.org) depends on.
+wikibase.netcore is an api for the MediaWiki Wikibase extension based on .net core 2.0. For more information about Wikibase see https://www.mediawiki.org/wiki/Wikibase. Wikibase is the software [Wikidata](https://www.wikidata.org) depends on.
 
-This api is still in development and does not promise to be stable. Thus if you find a bug, please report it or even better, create a patch and make a pull request. Contributions are very welcome.
+This api is still in development and does not promise to be stable.
+
+This project is a fork of Benestar's Wikibase.net (https://github.com/Benestar/wikibase.net/)
 
 Download and Installation
 -------------------------
